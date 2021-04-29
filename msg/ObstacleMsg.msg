@@ -1,0 +1,13 @@
+int32 id
+int32 type
+int32 status
+int32 age
+float64 width
+float64 length
+float64 x
+float64 y
+float64 vel
+float64 accel
+float64 theta
+float64 omega
+float64 scale_rate

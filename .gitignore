@@ -1,0 +1,4 @@
+*.pyc
+*.trc
+data/*
+.vscode/*
