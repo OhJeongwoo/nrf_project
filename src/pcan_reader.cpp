@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "nrf_project/PCAN.h"
+#include "nrf_project/PCANArray.h"
 
 #include "ros/ros.h"
 #include "ros/time.h"
@@ -30,6 +31,7 @@
 
 using namespace std;
 
+typedef struct can_frame CAN;
 
 //CAN VARIABLES
 int socket_CAN_CH0;
@@ -42,15 +44,18 @@ struct ifreq CAN_IFR_CH0;
 struct ifreq CAN_IFR_CH1;
 struct can_frame CAN_FRAME_CH0;
 struct can_frame CAN_FRAME_CH1; 
+int ID;
 
+vector<struct can_frame> DATA;
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "pcan_reader");
     ros::NodeHandle nh_;
-    ros::Publisher pub_ = nh_.advertise<nrf_project::PCAN>("pcan_data", 1);
+    ros::Publisher pub_ = nh_.advertise<nrf_project::PCANArray>("pcan_data", 1);
 
     ros::Time init_time = ros::Time::now();
-    int seq = 0;
+    nrf_project::PCANArray rt;
+    rt.header.seq = 0;
 
     if ((socket_CAN_CH0 = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) perror("Socket");
 		
@@ -68,20 +73,46 @@ int main(int argc, char **argv){
 		CAN_READ_BYTES_CH0 = read(socket_CAN_CH0, &CAN_FRAME_CH0, sizeof(struct can_frame));
 
         if (CAN_READ_BYTES_CH0 > 0){
-            seq++;
-            nrf_project::PCAN rt;
+            
+            ID = CAN_FRAME_CH0.can_id;
+            if (ID == 0x700){
+                //reset
+                rt.header.seq ++;
+                rt.header.stamp = ros::Time::now();
+                DATA.clear();
+            }
+            else if(ID == 0x728){
+                if(rt.header.seq == 0) continue;
+                rt.size = DATA.size();
+                vector<nrf_project::PCAN> pcan_array;
+                for(struct can_frame data : DATA){
+                    nrf_project::PCAN tmp;
+                    tmp.type = data.can_id;
+                    tmp.size = data.can_dlc;
+                    for(int i = 0; i < data.can_dlc; i++) tmp.data.push_back(data.data[i]); 
+                    pcan_array.push_back(tmp);
+                }
+                rt.messages = pcan_array;
+                pub_.publish(rt);
+            }
+            DATA.push_back(CAN_FRAME_CH0);
+        // ID = CAN_FRAME_CH0.can_id;
+	    // if((ID >> 8) - ((ID >> 12) << 4) != 7) continue;
+   	    // cout << ID << endl;
+	    // nrf_project::PCAN rt;
 
-            rt.header.stamp = ros::Time::now();
-            rt.header.seq = seq;
+        //     //rt.header.stamp = ros::Time::now();
+        //     //rt.header.seq = seq;
 
-            rt.type = (int)CAN_FRAME_CH0.can_id;
-            rt.size = (int)CAN_FRAME_CH0.can_dlc;
+        //     rt.type = ID;
+        //     rt.size = CAN_FRAME_CH0.can_dlc;
 
-            vector<int> data_array;
-            for(int i = 0; i < rt.size; i++) data_array.push_back(CAN_FRAME_CH0.data[i]);
-            rt.data = data_array;
+        //     //vector<int> data_array;
+        //     //for(int i = 0; i < rt.size; i++) data_array.push_back(CAN_FRAME_CH0.data[i]);
+        //     //rt.data = CAN_FRAME_CH0.data;
+	    // copy(begin(CAN_FRAME_CH0.data), end(CAN_FRAME_CH0.data), back_inserter(rt.data));
 
-            pub_.publish(rt);
+            // pub_.publish(rt);
         }
         else ROS_ERROR("NO DATA");
     }

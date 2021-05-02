@@ -28,7 +28,7 @@ find_package(Eigen3)
 add_message_files(
   DIRECTORY msg
   FILES 
-  LaneMsg.msg ObstacleMsg.msg PCAN.msg Mobileye.msg
+  LaneMsg.msg ObstacleMsg.msg PCAN.msg PCANArray.msg Mobileye.msg
 )
 
 generate_messages(DEPENDENCIES std_msgs geometry_msgs sensor_msgs)
@@ -56,6 +56,6 @@ add_executable(pcan_reader src/pcan_reader.cpp ${HEADERS} ${SOURCES})
 target_link_libraries(pcan_reader ${catkin_LIBRARIES})
 add_dependencies(pcan_reader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
-target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
-add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
+#target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
+#add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

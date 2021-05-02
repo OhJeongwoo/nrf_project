@@ -3,6 +3,7 @@ import rospy
 import time
 
 from nrf_project.msg import PCAN
+from nrf_project.msg import PCANArray
 from nrf_project.msg import Mobileye
 from nrf_project.msg import LaneMsg
 from nrf_project.msg import ObstacleMsg
@@ -14,11 +15,11 @@ import utils
 from message import Message
 from data import Data
 
-def decode_pcan_message(msg):
+def decode_pcan_message(header, msg):
     rt = Message()
 
-    rt.seq = msg.header.seq
-    rt.time = msg.header.stamp.to_sec()
+    rt.seq = header.seq
+    rt.time = header.stamp.to_sec()
     rt.type = msg.type
     rt.size = msg.size
 
@@ -33,6 +34,14 @@ def decode_pcan_message(msg):
     rt.data = data
 
     return rt
+
+def decode_pcan_array(msg):
+    messages = []
+    header = msg.header
+    for message in msg.messages:
+        messages.append(decode_pcan_message(header, message))
+
+    return msg.header.seq, msg.header.stamp.to_sec(), messages
 
 def generate_message(data):
     rt = Mobileye()
@@ -60,8 +69,8 @@ def generate_message(data):
 
 class PCANDecoder:
     def __init__(self):
-        self.sub_ = rospy.Subscriber("/pcan_data", PCAN, self.callback)
-        self.pub_ = rospy.Publisher("/mobileye", Mobileye, queue_size=10)
+        self.sub_ = rospy.Subscriber("/pcan_data", PCANArray, self.callback)
+        self.pub_ = rospy.Publisher("/mobileye", Mobileye, queue_size=20)
         self.valid = True
         self.left_lane_valid = True
         self.right_lane_valid = True
@@ -83,21 +92,9 @@ class PCANDecoder:
         step 2. stack received msg
         step 3. if msg type is 0x728, publish data
         """
-        msg = decode_pcan_message(raw_msg)
+        self.seq, self.time, self.message_stack = decode_pcan_array(raw_msg)
         
-        # step 1. if msg type is 0x700, reset data
-        if msg.type == utils.INIT:
-            self.message_stack = []
-            self.seq = self.seq + 1
-            self.time = msg.time
-        
-
-        # step 2. stack received msg
-        self.message_stack.append(msg)
-
-        # step 3. if msg type is 0x728, publish data
-        if msg.type == utils.END:
-            self.publish()
+        self.publish()
 
 
 
