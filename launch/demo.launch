@@ -1,0 +1,7 @@
+<launch>
+    <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch"/> -->
+    <node name="pcan_reader" pkg="nrf_project" type="pcan_reader" />
+    <node name="pcan_decoder" pkg="nrf_project" type="pcan_decoder.py"/>
+    <node name="local_map_publisher" pkg="nrf_project" type="local_map_publisher"/>
+    <node name="il_ins" pkg="inertiallabs_ins" type="il_ins"/>
+</launch>

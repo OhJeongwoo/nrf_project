@@ -6,3 +6,10 @@ int32 n_next_lanes
 nrf_project/LaneMsg[] next_lanes
 int32 n_obstacles
 nrf_project/ObstacleMsg[] obstacles
+float64 x
+float64 y
+float64 v
+float64 ax
+float64 ay
+float64 theta
+float64 omega

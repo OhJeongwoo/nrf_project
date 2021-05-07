@@ -17,6 +17,23 @@ class Data:
         self.n_obstacles = 0
         self.obstacles = []
         self.valid = True
+        self.x = 0.0
+        self.y = 0.0
+        self.v = 0.0
+        self.ax = 0.0
+        self.ay = 0.0
+        self.theta = 0.0
+        self.omega = 0.0
+
+
+    def add_vehicle_state(self, x, y, v, ax, ay, theta, omega):
+        self.x = x
+        self.y = y
+        self.v = v
+        self.ax = ax
+        self.ay = ay
+        self.theta = theta
+        self.omega = omega
 
     def find_message(self, target):
         for msg in self.messages:
@@ -87,5 +104,12 @@ class Data:
                                     'next_lanes': [lane.get_lane() for lane in self.next_lanes]}}
         rt['obstacle'] = {'size': self.n_obstacles,
                           'obstacles': [obstacle.get_obstacle() for obstacle in self.obstacles]}
+        rt['vehicle_state'] = {'x': self.x,
+                               'y': self.y,
+                               'v': self.v,
+                               'ax': self.ax,
+                               'ay': self.ay,
+                               'theta': self.theta,
+                               'omega': self.omega}
         
         return rt
