@@ -61,6 +61,10 @@ add_executable(local_map_publisher src/local_map_publisher.cpp ${HEADERS} ${SOUR
 target_link_libraries(local_map_publisher ${catkin_LIBRARIES} ${CV_LIBRARIES})
 add_dependencies(local_map_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(test_image_save src/test_image_save.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(test_image_save ${catkin_LIBRARIES} ${CV_LIBRARIES})
+add_dependencies(test_image_save ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
 #target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
 #add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -2,3 +2,4 @@
 *.trc
 data/*
 .vscode/*
+result/*

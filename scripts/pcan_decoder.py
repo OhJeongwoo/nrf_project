@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import rospy
+import rospkg
 import time
 import math
 
@@ -84,12 +85,9 @@ def generate_message(data):
 
 class PCANDecoder:
     def __init__(self):
-        self.sub_ = rospy.Subscriber("/pcan_data", PCANArray, self.callback)
-        self.sub_ins_ = rospy.Subscriber("/Inertial_Labs/ins_data", ins_data, self.callback_ins)
-        self.sub_sensor_ = rospy.Subscriber("/Inertial_Labs/sensor_data", self.callback_sensor)
-        self.pub_ = rospy.Publisher("/mobileye", Mobileye, queue_size=20)
-        self.result_path = "/home/jeongwoooh/result/"
-        self.data_name = "test01"
+        self.data_name = "gunmin_01"
+        # self.result_path = rospkg.RosPack().get_path("nrf_project") + "/result/" + self.data_name + "/"
+        self.result_path = "/media/jeongwoooh/iptime HDD3125 2TB/result/" + self.data_name + "/"
         self.valid = True
         self.left_lane_valid = True
         self.right_lane_valid = True
@@ -113,6 +111,22 @@ class PCANDecoder:
         self.copy_right = "RLLAB@SNU"
         self.date = datetime.datetime.now().strftime("%Y-%m-%d")
 
+        self.sub_ = rospy.Subscriber("/pcan_data", PCANArray, self.callback)
+        self.sub_ins_ = rospy.Subscriber("/Inertial_Labs/ins_data", ins_data, self.callback_ins)
+        self.sub_sensor_ = rospy.Subscriber("/Inertial_Labs/sensor_data", sensor_data, self.callback_sensor)
+        self.pub_ = rospy.Publisher("/mobileye", Mobileye, queue_size=20)
+        
+
+        if not os.path.exists(self.result_path):
+            os.mkdir(self.result_path)
+        if not os.path.exists(self.result_path + "state"):
+            os.mkdir(self.result_path+"state")
+        if not os.path.exists(self.result_path + "image_raw"):
+            os.mkdir(self.result_path+"image_raw")
+        if not os.path.exists(self.result_path + "local_map"):
+            os.mkdir(self.result_path+"local_map")
+        
+
 
     def callback_ins(self, msg):
         """
@@ -130,7 +144,7 @@ class PCANDecoder:
         """
         self.ax = msg.Accel.x
         self.ay = msg.Accel.y
-        self.omega = msg.Gyro.z
+        self.omega = math.pi / 180.0 * msg.Gyro.z
 
 
     def callback(self, raw_msg):
@@ -148,7 +162,7 @@ class PCANDecoder:
 
 
     def save(self, data):
-        save_path = self.result_path + "/" + self.data_name + "/" + str(msg.header.seq).zfill(6) + ".json"
+        save_path = self.result_path + "/state/" + str(data.seq).zfill(6) + ".json"
 
         save_file = data.get_data()
         save_file['author'] = self.author
@@ -163,13 +177,7 @@ class PCANDecoder:
     def publish(self):
         rt = Mobileye()
         data = Data(self.seq, self.time, self.message_stack)
-        data.add_vehicle_state(self.x,
-                               self.y,
-                               self.v,
-                               self.ax,
-                               self.ay,
-                               self.theta,
-                               self.omega)
+        data.add_vehicle_state(self.x, self.y, self.v, self.ax, self.ay, self.theta, self.omega)
         valid = data.decode_data()
 
         if not valid:

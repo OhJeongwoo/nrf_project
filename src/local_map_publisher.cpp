@@ -90,19 +90,25 @@ class LocalMapPublisher{
 
     public:
     LocalMapPublisher(){
-        pub_ = nh_.advertise<sensor_msgs::Image>("/local_map/image_raw", 10);
-        sub_ = nh_.subscribe("/mobileye", 1, &LocalMapPublisher::callback, this);
-        // sub_imu_ = nh_.subscribe("/Inertial_Labs/ins_data", 1, &LocalMapPublisher::callback_imu, this);
-        sub_img_ = nh_.subscribe("/camera/color/image_raw", 1, &LocalMapPublisher::callback_image, this);
-        result_path_ << ros::package::getPath("nrf_project");
-        data_name_ = "test01";
+        data_name_ = "gunmin_01";
+        result_path_ << "/media/jeongwoooh/iptime HDD3125 2TB" << "/result/" << data_name_;
 
         width_ = 60.0;
         height_ = 60.0;
         resolution_ = 0.1;
         img_width_ = int(width_ / resolution_);
         img_height_ = int(height_ / resolution_);
-        // heading_ = 0.0;
+
+        sub_img_ = nh_.subscribe("/camera/color/image_raw", 1, &LocalMapPublisher::callback_image, this);
+        
+        sleep(1);
+        // ROS_INFO("DEBUG1");
+        
+        pub_ = nh_.advertise<sensor_msgs::Image>("/local_map/image_raw", 10);
+        // ROS_INFO("DEBUG2");
+        sub_ = nh_.subscribe("/mobileye", 1, &LocalMapPublisher::callback, this);
+        // ROS_INFO("DEBUG3");
+        // ROS_INFO("DEBUG4");
     }
 
     cv::Point xy_to_pixel(pdd pos){
@@ -111,46 +117,24 @@ class LocalMapPublisher{
 
     void draw_lane(const nrf_project::LaneMsg& msg){
         vector<pdd> points;
-        // cv::Scalar color;
-        // if(type == 1) color = cv::Scalar(255, 255, 0);
-        // else if(type==2) color = cv::Scalar(0, 255, 255);
-        // else color = cv::Scalar(0,255,0);
         Lane lane = Lane(msg.c[0], msg.c[1], msg.c[2], msg.c[3]);
         for(int i = 0; i < 500; i++) cv::circle(local_map_, xy_to_pixel({lane.get_x(0.1*i), 0.1*i}), 1.0, Scalar(0, 255, 0), -1);
     }
 
     void draw_obstacle(const nrf_project::ObstacleMsg& msg){
         cv::RotatedRect obstacle = cv::RotatedRect(xy_to_pixel({-msg.y, msg.x}), cv::Size2f(msg.width / resolution_, msg.width / resolution_), msg.theta);
-        cout << msg.width << " " << msg.length << " " << msg.theta << endl;
-        cout << msg.x << " " << msg.y << endl;
+        // cout << msg.width << " " << msg.length << " " << msg.theta << endl;
+        // cout << msg.x << " " << msg.y << endl;
         cv::Point2f vertices[4];
         obstacle.points(vertices);
         for (int i = 0; i < 4; i++) cv::line(local_map_, vertices[i], vertices[(i+1)%4], cv::Scalar(0, 0, 255), 3);
     }
 
     void callback_image(const sensor_msgs::Image::ConstPtr& msg){
-        // cv_bridge::CvImagePtr cv_ptr;
-        // try
-        // {
-        //     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-        // }
-        // catch (cv_bridge::Exception& e)
-        // {
-        //     ROS_ERROR("cv_bridge exception: %s", e.what());
-        //     return;
-        // }
-        
-
-        // cur_image_ = *msg;
         cv_ptr_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     }
 
-    // void callback_imu(const inertiallabs_msgs::ins_data::ConstPtr& msg){
-    //     heading_ = 2.0 * PI / 360.0 * msg->YPR.x;
-
-    //     return;
-    // }
-
+    
     void callback(const nrf_project::Mobileye::ConstPtr& msg){
         if(!msg->valid) return;
 
@@ -174,16 +158,16 @@ class LocalMapPublisher{
         cv::line(local_map_, Point(100,100), Point(int(100+30.0*cos(msg->theta)), int(100+30.0*sin(msg->theta))), cv::Scalar(255, 0, 0), 1);
 
         // draw velocity line
-        cv::line(local_map_, Point(50 + int(100*clip(msg->v, 20, 0)), 180), Point(150 + int(100*clip(msg->v, 20, 0)), 200), cv::Scalar(255, 0, 0), 2);
+        cv::line(local_map_, Point(50 + int(100*clip(msg->v, 20, 0)), 180), Point(50 + int(100*clip(msg->v, 20, 0)), 200), cv::Scalar(255, 0, 0), 2);
 
         // draw acceleration x-axis line
-        cv::line(local_map_, Point(50 + int(100*clip(msg->ax, 5, 1)), 220), Point(150 + int(100*clip(msg->ax, 5, 1)), 240), cv::Scalar(255, 0, 0), 2);
+        cv::line(local_map_, Point(50 + int(100*clip(msg->ax, 5, 1)), 220), Point(50 + int(100*clip(msg->ax, 5, 1)), 240), cv::Scalar(255, 0, 0), 2);
 
         // draw acceleration y-axis line
-        cv::line(local_map_, Point(50 + int(100*clip(msg->ay, 5, 1)), 260), Point(150 + int(100*clip(msg->ay, 5, 1)), 280), cv::Scalar(255, 0, 0), 2);
+        cv::line(local_map_, Point(50 + int(100*clip(msg->ay, 5, 1)), 260), Point(50 + int(100*clip(msg->ay, 5, 1)), 280), cv::Scalar(255, 0, 0), 2);
 
         // draw angular velocity line
-        cv::line(local_map_, Point(50 + int(100*clip(msg->omega, 1, 1)), 300), Point(150 + int(100*clip(msg->omega, 1, 1)), 320), cv::Scalar(255, 0, 0), 2);
+        cv::line(local_map_, Point(50 + int(100*clip(msg->omega, 1, 1)), 300), Point(50 + int(100*clip(msg->omega, 1, 1)), 320), cv::Scalar(255, 0, 0), 2);
 
         // our position
         cv::circle(local_map_, xy_to_pixel({0,0}), 5.0, Scalar(255, 0, 0), -1);
@@ -198,15 +182,15 @@ class LocalMapPublisher{
         for(int i = 0; i < msg->n_next_lanes; i++) draw_lane(msg->next_lanes[i]);
 
         // obstacles
-        cout << msg->n_obstacles << endl;
+        // cout << msg->n_obstacles << endl;
         for(int i = 0; i < msg->n_obstacles; i++) draw_obstacle(msg->obstacles[i]);
 
         sensor_msgs::Image rt;
         img_bridge = cv_bridge::CvImage(msg->header, sensor_msgs::image_encodings::RGB8, local_map_);
         img_bridge.toImageMsg(rt);
 
-        string raw_image_save_path = result_path_.str() + "/" + data_name_ + "/raw_image/" + zfill(msg->header.seq);
-        string local_map_save_path = result_path_.str() + "/" + data_name_ + "/local_map/" + zfill(msg->header.seq); 
+        string raw_image_save_path = result_path_.str() + "/image_raw/" + zfill(msg->header.seq) + ".png";
+        string local_map_save_path = result_path_.str() + "/local_map/" + zfill(msg->header.seq) + ".png"; 
         cv::imwrite(raw_image_save_path, cv_ptr_->image);
         cv::imwrite(local_map_save_path, local_map_);
 
