@@ -1,5 +1,5 @@
 *.pyc
 *.trc
 sensor_decoder/data/*
-.vscode/*
 sensor_decoder/result/*
+.vscode/*
