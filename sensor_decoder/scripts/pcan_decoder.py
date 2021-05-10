@@ -4,11 +4,11 @@ import rospkg
 import time
 import math
 
-from nrf_project.msg import PCAN
-from nrf_project.msg import PCANArray
-from nrf_project.msg import Mobileye
-from nrf_project.msg import LaneMsg
-from nrf_project.msg import ObstacleMsg
+from sensor_decoder.msg import PCAN
+from sensor_decoder.msg import PCANArray
+from sensor_decoder.msg import Mobileye
+from sensor_decoder.msg import LaneMsg
+from sensor_decoder.msg import ObstacleMsg
 from inertiallabs_msgs.msg import ins_data
 from inertiallabs_msgs.msg import sensor_data
 from geometry_msgs.msg import Vector3
@@ -86,7 +86,7 @@ def generate_message(data):
 class PCANDecoder:
     def __init__(self):
         self.data_name = "gunmin_01"
-        # self.result_path = rospkg.RosPack().get_path("nrf_project") + "/result/" + self.data_name + "/"
+        # self.result_path = rospkg.RosPack().get_path("sensor_decoder") + "/result/" + self.data_name + "/"
         self.result_path = "/media/jeongwoooh/iptime HDD3125 2TB/result/" + self.data_name + "/"
         self.valid = True
         self.left_lane_valid = True

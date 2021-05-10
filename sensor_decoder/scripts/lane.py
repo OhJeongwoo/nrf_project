@@ -1,4 +1,4 @@
-from nrf_project.msg import LaneMsg
+from sensor_decoder.msg import LaneMsg
 
 class Lane:
     def __init__(self):

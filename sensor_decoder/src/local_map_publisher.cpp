@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "nrf_project/Mobileye.h"
+#include "sensor_decoder/Mobileye.h"
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/image_encodings.h"
 #include "inertiallabs_msgs/ins_data.h"
@@ -115,13 +115,13 @@ class LocalMapPublisher{
         return cv::Point(img_width_/2 + int(pos.first/resolution_), img_height_ - int(pos.second/resolution_));
     }
 
-    void draw_lane(const nrf_project::LaneMsg& msg){
+    void draw_lane(const sensor_decoder::LaneMsg& msg){
         vector<pdd> points;
         Lane lane = Lane(msg.c[0], msg.c[1], msg.c[2], msg.c[3]);
         for(int i = 0; i < 500; i++) cv::circle(local_map_, xy_to_pixel({lane.get_x(0.1*i), 0.1*i}), 1.0, Scalar(0, 255, 0), -1);
     }
 
-    void draw_obstacle(const nrf_project::ObstacleMsg& msg){
+    void draw_obstacle(const sensor_decoder::ObstacleMsg& msg){
         cv::RotatedRect obstacle = cv::RotatedRect(xy_to_pixel({-msg.y, msg.x}), cv::Size2f(msg.width / resolution_, msg.width / resolution_), msg.theta);
         // cout << msg.width << " " << msg.length << " " << msg.theta << endl;
         // cout << msg.x << " " << msg.y << endl;
@@ -135,7 +135,7 @@ class LocalMapPublisher{
     }
 
     
-    void callback(const nrf_project::Mobileye::ConstPtr& msg){
+    void callback(const sensor_decoder::Mobileye::ConstPtr& msg){
         if(!msg->valid) return;
 
         local_map_ = Mat(img_height_, img_width_, CV_8UC3, Scalar(255,255,255));

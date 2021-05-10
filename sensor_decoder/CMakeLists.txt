@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(nrf_project)
+project(sensor_decoder)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

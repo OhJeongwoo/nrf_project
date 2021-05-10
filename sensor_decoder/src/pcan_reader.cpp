@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "nrf_project/PCAN.h"
-#include "nrf_project/PCANArray.h"
+#include "sensor_decoder/PCAN.h"
+#include "sensor_decoder/PCANArray.h"
 
 #include "ros/ros.h"
 #include "ros/time.h"
@@ -51,10 +51,10 @@ vector<struct can_frame> DATA;
 int main(int argc, char **argv){
     ros::init(argc, argv, "pcan_reader");
     ros::NodeHandle nh_;
-    ros::Publisher pub_ = nh_.advertise<nrf_project::PCANArray>("pcan_data", 1);
+    ros::Publisher pub_ = nh_.advertise<sensor_decoder::PCANArray>("pcan_data", 1);
 
     ros::Time init_time = ros::Time::now();
-    nrf_project::PCANArray rt;
+    sensor_decoder::PCANArray rt;
     rt.header.seq = 0;
 
     if ((socket_CAN_CH0 = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) perror("Socket");
@@ -84,9 +84,9 @@ int main(int argc, char **argv){
             else if(ID == 0x728){
                 if(rt.header.seq == 0) continue;
                 rt.size = DATA.size();
-                vector<nrf_project::PCAN> pcan_array;
+                vector<sensor_decoder::PCAN> pcan_array;
                 for(struct can_frame data : DATA){
-                    nrf_project::PCAN tmp;
+                    sensor_decoder::PCAN tmp;
                     tmp.type = data.can_id;
                     tmp.size = data.can_dlc;
                     for(int i = 0; i < data.can_dlc; i++) tmp.data.push_back(data.data[i]); 
@@ -99,7 +99,7 @@ int main(int argc, char **argv){
         // ID = CAN_FRAME_CH0.can_id;
 	    // if((ID >> 8) - ((ID >> 12) << 4) != 7) continue;
    	    // cout << ID << endl;
-	    // nrf_project::PCAN rt;
+	    // sensor_decoder::PCAN rt;
 
         //     //rt.header.stamp = ros::Time::now();
         //     //rt.header.seq = seq;

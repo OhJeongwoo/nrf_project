@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>nrf_project</name>
+  <name>sensor_decoder</name>
   <version>0.0.0</version>
   <description>For NRF Project</description>
   <maintainer email="jeongwoo.oh@rllab.snu.ac.kr">jeongwoo</maintainer>

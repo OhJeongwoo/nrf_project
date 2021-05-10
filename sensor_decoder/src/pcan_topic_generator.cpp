@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "nrf_project/PCAN.h"
+#include "sensor_decoder/PCAN.h"
 
 #include "ros/ros.h"
 #include "ros/time.h"
@@ -22,11 +22,11 @@ using namespace std;
 int main(int argc, char **argv){
     ros::init(argc, argv, "pcan_topic_generator");
     ros::NodeHandle nh_;
-    ros::Publisher pub_ = nh_.advertise<nrf_project::PCAN>("pcan_data", 1);
+    ros::Publisher pub_ = nh_.advertise<sensor_decoder::PCAN>("pcan_data", 1);
 
     stringstream data_path_;
-    data_path_ << ros::package::getPath("nrf_project") << "/data/trace.trc";
-    vector<nrf_project::PCAN> topic_array;
+    data_path_ << ros::package::getPath("sensor_decoder") << "/data/trace.trc";
+    vector<sensor_decoder::PCAN> topic_array;
     const char delimiter = ' ';
     string in_line;
     ifstream in(data_path_.str());
@@ -38,7 +38,7 @@ int main(int argc, char **argv){
         while(getline(ss,token,delimiter)) tokens.push_back(token);
         seq ++;
         if(seq > 100000) break;
-        nrf_project::PCAN msg;
+        sensor_decoder::PCAN msg;
         msg.header.seq = seq;
         double time = stod(tokens[1])/1000.0;
         msg.header.stamp.sec = int(time);

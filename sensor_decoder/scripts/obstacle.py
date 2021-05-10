@@ -1,4 +1,4 @@
-from nrf_project.msg import ObstacleMsg
+from sensor_decoder.msg import ObstacleMsg
 
 class Obstacle:
     def __init__(self):
