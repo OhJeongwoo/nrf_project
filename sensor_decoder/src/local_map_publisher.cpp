@@ -90,7 +90,7 @@ class LocalMapPublisher{
 
     public:
     LocalMapPublisher(){
-        data_name_ = "gunmin_01";
+        data_name_ = "gunmin_02";
         result_path_ << "/media/jeongwoooh/iptime HDD3125 2TB" << "/result/" << data_name_;
 
         width_ = 60.0;

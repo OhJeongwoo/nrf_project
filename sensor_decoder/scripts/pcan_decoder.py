@@ -85,7 +85,7 @@ def generate_message(data):
 
 class PCANDecoder:
     def __init__(self):
-        self.data_name = "gunmin_01"
+        self.data_name = "gunmin_02"
         # self.result_path = rospkg.RosPack().get_path("sensor_decoder") + "/result/" + self.data_name + "/"
         self.result_path = "/media/jeongwoooh/iptime HDD3125 2TB/result/" + self.data_name + "/"
         self.valid = True
