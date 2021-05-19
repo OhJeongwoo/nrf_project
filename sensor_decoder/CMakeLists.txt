@@ -7,6 +7,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -40,6 +41,9 @@ catkin_package(
 	opencv_highgui opencv_imgproc
 )
 
+find_package(OpenCV REQUIRED)
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
  )
 
@@ -64,6 +68,10 @@ add_dependencies(local_map_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 add_executable(test_image_save src/test_image_save.cpp ${HEADERS} ${SOURCES})
 target_link_libraries(test_image_save ${catkin_LIBRARIES} ${CV_LIBRARIES})
 add_dependencies(test_image_save ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(driving_video_generator src/driving_video_generator.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(driving_video_generator ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(driving_video_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
 #target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
