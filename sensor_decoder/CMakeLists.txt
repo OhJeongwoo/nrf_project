@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV 3 REQUIRED)
 find_package(Eigen3)
+find_package(PCL 1.8 REQUIRED)
 
 add_message_files(
   DIRECTORY msg
@@ -44,7 +45,7 @@ catkin_package(
 find_package(OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
+include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
  )
 
 #add_library({LIB_NAME} lib/{LIB_NAME}.cpp)
@@ -73,6 +74,14 @@ add_executable(driving_video_generator src/driving_video_generator.cpp ${HEADERS
 target_link_libraries(driving_video_generator ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(driving_video_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(video_recorder src/video_recorder.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(video_recorder ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(video_recorder ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(pc_collector src/pc_collector.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(pc_collector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(pc_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
 #target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
 #add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -81,3 +90,5 @@ catkin_install_python(PROGRAMS
   scripts/pcan_decoder.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+
