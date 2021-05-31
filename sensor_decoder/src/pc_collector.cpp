@@ -1,47 +1,62 @@
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <string.h>
+
 #include <ros/ros.h>
-#include <pcl/point_cloud.h>
-//msgs type and conversion
+#include <ros/time.h>
+#include <ros/package.h>
+
 #include <sensor_msgs/PointCloud2.h>
+
+#include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
-//pcd io
 #include <pcl/io/pcd_io.h>
-//point types
 #include <pcl/point_types.h>
  
-int i=0;
-char ch=(char)(int('0'));
-void 
-call_back(const sensor_msgs::PointCloud2ConstPtr& input)
-{
-//Convert the sensor_msgs/PointCloud2 data to pcl/PointCloud
-    pcl::PointCloud<pcl::PointXYZ> cloud;
-    pcl::fromROSMsg (*input, cloud);//cloud is the output
-    
-//save to PCD for 5 times    
-    std::string pcd_name("pcl_2_pcd");
-    if(i<5)
-    {
-    i++;
-    ch++;
-    pcd_name+=ch;
-    if(pcl::io::savePCDFileASCII (pcd_name+".pcd", cloud)>=0)//input pointcloud should be pcl::PointCloud<PointT> only,rather than others 
-    {std::cerr << "Saved  " << pcd_name<<".pcd"<< std::endl;}
-    
- 
-    }
+using namespace std;
+
+
+string zfill(int n){
+  if(n==0) return "000000";
+  int digit = log10(n) + 1;
+  string rt = "";
+  for(int i=0;i<6-digit;i++) rt+="0";
+  return rt+to_string(n);
 }
+
+class PCCollector{
+  private:
+  ros::NodeHandle nh_;
+  ros::Subscriber sub_;
+  string data_name_;
+  stringstream result_path_;
+  int seq;
+
+  public:
+  PCCollector(){
+    sub_ = nh_.subscribe("/points_raw", 1, &PCCollector::callback, this);
+    data_name_ = "pc";
+    result_path_ << ros::package::getPath("sensor_decoder") << "/result/" << data_name_ << "/point_clouds/";
+    seq = 0;
+  }
+
+  void callback(const sensor_msgs::PointCloud2ConstPtr& msg){
+    seq ++;
+
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    pcl::fromROSMsg(*msg, cloud);
+
+    string save_path = result_path_.str() + zfill(seq) + ".pcd";
+    if(pcl::io::savePCDFileASCII(save_path, cloud) >= 0) cout << "Saved " << save_path << endl;
+  }
+
+};
  
-int
-main(int argc,char** argv)
-{
-// Initialize ROS
-  ros::init (argc, argv, "pc_collector");
-  ros::NodeHandle nh;
- 
-// Create a ROS subscriber for the input point cloud
-  ros::Subscriber sub = nh.subscribe ("points_raw", 1, call_back);
- 
-// Spin
-  ros::spin ();
+int main(int argc,char** argv){
+  ros::init(argc, argv, "pc_collector");
+  
+  PCCollector pc_collector;
+  ros::spin();
 }
 

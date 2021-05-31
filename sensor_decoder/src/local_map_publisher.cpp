@@ -200,6 +200,7 @@ class LocalMapPublisher{
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "local_map_publisher");
+    
     LocalMapPublisher local_map_publisher;
     ros::spin();
 }
