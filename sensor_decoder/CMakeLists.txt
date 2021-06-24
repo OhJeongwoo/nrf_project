@@ -82,6 +82,10 @@ add_executable(pc_collector src/pc_collector.cpp ${HEADERS} ${SOURCES})
 target_link_libraries(pc_collector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(pc_collector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(decision_manual src/decision_manual.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(decision_manual ${catkin_LIBRARIES})
+add_dependencies(decision_manual ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(pcan_topic_generator src/pcan_topic_generator.cpp ${HEADERS} ${SOURCES})
 #target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
 #add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

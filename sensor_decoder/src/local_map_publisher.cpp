@@ -92,7 +92,7 @@ class LocalMapPublisher{
     LocalMapPublisher(){
         data_name_ = "gunmin_04";
         //result_path_ << "/media/jeongwoooh/40820CAB820CA80C" << "/result/" << data_name_;
-	result_path_ << ros::package::getPath("sensor_decoder") <<"/result/"<<data_name_;
+	    result_path_ << ros::package::getPath("sensor_decoder") <<"/result/"<<data_name_;
         width_ = 60.0;
         height_ = 60.0;
         resolution_ = 0.1;
