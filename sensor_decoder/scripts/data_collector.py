@@ -101,12 +101,12 @@ class DataCollector:
         self.fontthickness = 2
         self.fontline = cv2.LINE_AA
 
-        self.minX = 0.0
-        self.maxX = 0.0
-        self.minY = 0.0
-        self.maxY = 0.0
-        self.minZ = 0.0
-        self.maxZ = 0.0
+        self.minX = -20.0
+        self.maxX = 40.0
+        self.minY = -30.0
+        self.maxY = 30.0
+        self.minZ = -2.73
+        self.maxZ = 1.27
         self.resolution = 0.1
         self.cx = (self.minX + self.maxX) / 2.0
         self.cy = (self.minY + self.maxY) / 2.0
@@ -131,7 +131,7 @@ class DataCollector:
 
     def xy_to_pixel(self, x, y):
         px = int((x - self.cx) / self.resolution + self.bev_width / 2)
-        py = int((y - self.cy) / self.resolution + self.bev_height / 2)
+        py = int(-(y - self.cy) / self.resolution + self.bev_height / 2)
         return px, py
 
     def get_decision(self, type):
