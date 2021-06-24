@@ -1,0 +1,18 @@
+<launch>
+    <!-- initialize novatel -->
+    <node name="il_ins" pkg="inertiallabs_ins" type="il_ins"/>
+
+    <!-- initialize mobileye -->
+    <node name="pcan_reader" pkg="sensor_decoder" type="pcan_reader" output="screen"/>
+    <node name="pcan_decoder" pkg="sensor_decoder" type="pcan_decoder.py" output="screen"/>
+
+    <!-- initialize realsense -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch"/>
+
+    <!-- initialize velodyne -->
+    <inclue file="$(find runtime_manager)/launch_files/triple_vlp16.launch"/>
+
+    <!-- run data collector -->
+    <node name="data_collector" pkg="sensor_decoder" type="data_collector.py" output="screen"/>
+
+</launch>

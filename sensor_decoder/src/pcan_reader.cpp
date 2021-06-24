@@ -53,6 +53,13 @@ int main(int argc, char **argv){
     ros::NodeHandle nh_;
     ros::Publisher pub_ = nh_.advertise<sensor_decoder::PCANArray>("pcan_data", 1);
 
+    // TO DO commend automation
+    // sudo ip link set can0 type can bitrate 500000
+    // sudo ifconfig can0 up
+    // string command = "echo sudo ip link set";
+    // const char *c = command.c_str();
+    // system(c);
+
     ros::Time init_time = ros::Time::now();
     sensor_decoder::PCANArray rt;
     rt.header.seq = 0;

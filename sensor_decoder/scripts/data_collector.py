@@ -39,6 +39,15 @@ STOP = 4
 def norm(v):
     return math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 
+def clip(value, limit):
+    """
+    clip value by given limit and rescale to [-1,1]
+    """
+    if abs(value) > abs(limit):
+        return value / abs(value)
+    else:
+        return value / limit
+
 class DataCollector:
     def __init__(self):
         self.sub_gps = rospy.Subscriber("/Inertial_Labs/ins_data", ins_data, self.callback_gps)
@@ -48,6 +57,12 @@ class DataCollector:
         self.sub_camera = rospy.Subscriber("/camera/color/image_raw", Image, self.callback_camera)
         self.sub_lidar = rospy.Subscriber("/points_raw", PointCloud2, self.callback_lidar)
         self.pub_local_map = rospy.Publisher("/local_map", Image)
+
+        self.init_gps = False
+        self.init_imu = False
+        self.init_mobileye = False
+        self.init_camera = False
+        self.init_lidar = False
 
         self.bridge = CvBridge()
 
@@ -66,12 +81,25 @@ class DataCollector:
         self.bev_map_path = self.data_path + "bev_map/"
         self.local_map_path = self.data_path + "local_map/"
         
-        self.merging_threshold = 1.0
 
+        self.lanes = []
         self.decision = KEEPING_LANE
         self.lane_decision = KEEPING_LANE
-        self.lateral_deviation = 0.0
+        self.merging_threshold = 1.0
+        self.current_deviation = 0.0
+        self.target_deviation = 0.0
         self.default_lane_width = 3.3
+
+        self.n_marked_lane = 500
+        self.v_clip = 20.0
+        self.ax_clip = 5.0
+        self.ay_clip = 1.0
+        self.w_clip = 0.5
+        self.dev_clip = 4.0
+        self.font = cv2.FONT_HERSHEY_SIMPLEX
+        self.fontscale = 0.5
+        self.fontthickness = 2
+        self.fontline = cv2.LINE_AA
 
         self.minX = 0.0
         self.maxX = 0.0
@@ -106,10 +134,61 @@ class DataCollector:
         py = int((y - self.cy) / self.resolution + self.bev_height / 2)
         return px, py
 
+    def get_decision(self, type):
+        if type == 1:
+            return "KEEP LANE"
+        if type == 2:
+            return "CHANGE LEFT"
+        if type == 3:
+            return "CHANGE RIGHT"
+        if type == 4:
+            return "STOP"
+        return "ERROR"
+
+    def save_state(self):
+        """
+        save state to .json file
+        return state dictionary
+        """
+        rt = {}
+        rt['x'] = self.x
+        rt['y'] = self.y
+        rt['v'] = self.v
+        rt['ax'] = self.ax
+        rt['ay'] = self.ay
+        rt['theta'] = self.theta
+        rt['omega'] = self.omega
+        rt['decision'] = self.lane_decision
+        rt['current_deviation'] = self.current_deviation
+        rt['target_deviation'] = self.target_deviation
+
+        rt['seq'] = self.seq
+        rt['author'] = self.author
+        rt['email'] = self.email
+        rt['copy_right'] = self.copy_right
+        rt['date'] = self.date
+        rt['data_name'] = self.data_name
+
+        save_path = self.state_path + str(self.seq).zfill(6) + ".json"
+        with open(save_path, 'w') as outfile:
+            json.dump(rt, outfile, indent=4)
+
+        return rt
+
+    def draw_lanes(self):
+        for lane in self.lanes:
+            for i in range(self.n_marked_lane):
+                cv2.circle(self.local_map, self.xy_to_pixel(lane.get_x(0.1*i), 0.1*i), 1.0, (0,255,0), -1)
+            
+
     def callback_gps(self, msg):
         """
         update x, y, v, theta
         """
+        if not self.init_gps:
+            rospy.loginfo("Start to receive GPS data")
+        self.init_gps = True
+
         self.x = msg.LLH.x
         self.y = msg.LLH.y
         self.v = norm(msg.Vel_ENU)
@@ -120,6 +199,10 @@ class DataCollector:
         """
         update ax, ay, omega
         """
+        if not self.init_imu:
+            rospy.loginfo("Start to receive IMU data")
+        self.init_imu = True
+
         self.ax = msg.Accel.x
         self.ay = msg.Accel.y
         self.omega = math.pi / 180.0 * msg.Gyro.z
@@ -136,6 +219,10 @@ class DataCollector:
         5. select lateral deviation close to previous value
         6. return value by decision signal
         """
+        if not self.init_mobileye:
+            rospy.loginfo("Start to receive MOBILEYE data")
+        self.init_mobileye = True
+
         # calculate offset
         offset = 0
         if self.lane_decision != self.decision:
@@ -146,13 +233,18 @@ class DataCollector:
         self.lane_decision = self.decision
 
         # decode raw lane deviation data
+        self.current_deviation = (msg.left_lane.c[0] + msg.right_lane.c[0]) / 2.0
         raw_data = []
+        self.lanes = []
         if msg.left_lane is not None:
             raw_data.append(msg.left_lane.c[0])
+            self.lanes.append(msg.left_lane)
         if msg.right_lane is not None:
             raw_data.append(msg.right_lane.c[0])
+            self.lanes.append(msg.right_lane)
         for i in range(msg.n_next_lanes):
             raw_data.append(msg.next_lanes[i].c[0])
+            self.lanes.append(msg.next_lanes[i])
         
         raw_data.sort()
 
@@ -186,16 +278,16 @@ class DataCollector:
         nearest = 0
         value = 1e3
         for i in range(len(dev)):
-            if value > abs(self.lateral_deviation - dev[i]):
-                value = abs(self.lateral_deviation - dev[i])
+            if value > abs(self.target_deviation - dev[i]):
+                value = abs(self.target_deviation - dev[i])
                 nearest = i
         
         target = nearest + offset
         if target < 0 or target >= len(dev):
-            self.lateral_deviation = dev[nearest] + offset * self.default_lane_width
+            self.target_deviation = dev[nearest] + offset * self.default_lane_width
             return
 
-        self.lateral_deviation = dev[target]
+        self.target_deviation = dev[target]
         return
 
         
@@ -210,6 +302,10 @@ class DataCollector:
         """
         update scene
         """
+        if not self.init_camera:
+            rospy.loginfo("Start to receive CAMERA data")
+        self.init_camera = True
+
         self.image_msg = msg
 
 
@@ -222,6 +318,12 @@ class DataCollector:
         4. generate bird eye view(bev) map with pointclouds and save it
         5. generate local map and save it
         """
+        if not self.init_lidar:
+            rospy.loginfo("Start to receive LIDAR data")
+        self.init_lidar = True
+        if not (self.init_gps and self.init_imu and self.init_mobileye and self.init_camera):
+            return
+        
         self.seq += 1
         # save current state
         state = self.save_state()
@@ -283,37 +385,62 @@ class DataCollector:
         cv2.imwrite(self.bev_map_path + str(self.seq).zfill(6) + ".png", bev_map)
 
         # generate local map and save it
+        self.local_map = bev_map
 
+        # draw lanes
+        self.draw_lanes()
+
+        # draw heading indicator
+        cv2.circle(self.local_map, (100, 100), 50.0, (255,255,255), 2)
+        cv2.line(self.local_map, (100,100), (int(100+30.0*math.cos(state['theta'])),int(100+30.0*math.sin(state['theta']))), (255, 0, 0), 1)
+        
+        # draw box for v, ax, ay, omega, lateral deviation indicator
+        cv2.putText(self.local_map, "v", (20, 200), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "ax", (20, 240), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "ay", (20, 280), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "w", (20, 320), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "dev", (20, 360), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+
+        cv2.rectangle(self.local_map, (50, 180), (150, 200), (255, 255, 255), 2)
+        cv2.rectangle(self.local_map, (50, 220), (150, 240), (255, 255, 255), 2)
+        cv2.rectangle(self.local_map, (50, 260), (150, 280), (255, 255, 255), 2)
+        cv2.rectangle(self.local_map, (50, 300), (150, 320), (255, 255, 255), 2)
+        cv2.rectangle(self.local_map, (50, 340), (150, 360), (255, 255, 255), 2)
+
+        cv2.line(self.local_map, (int(100 + 50 * clip(state['v'], self.v_clip)), 180), (int(100 + 50 * clip(state['v'], self.v_clip)), 200), (255, 0, 0), 2)
+        cv2.line(self.local_map, (int(100 + 50 * clip(state['ax'], self.ax_clip)), 220), (int(100 + 50 * clip(state['ax'], self.ax_clip)), 240), (255, 0, 0), 2)
+        cv2.line(self.local_map, (int(100 + 50 * clip(state['ay'], self.ay_clip)), 260), (int(100 + 50 * clip(state['ay'], self.ay_clip)), 280), (255, 0, 0), 2)
+        cv2.line(self.local_map, (int(100 + 50 * clip(state['omega'], self.w_clip)), 300), (int(100 + 50 * clip(state['omega'], self.w_clip)), 320), (255, 0, 0), 2)
+        cv2.line(self.local_map, (int(100 + 50 * clip(state['target_deviation'], self.dev_clip)), 340), (int(100 + 50 * clip(state['target_deviation'], self.dev_clip)), 360), (255, 0, 0), 2)
+
+        # write state info on the right side (x, y, theta, v, ax, ay, omega, decision, current deviation, target deviation)
+        cv2.putText(self.local_map, "lat      : " + str(state['x']), (400, 50), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "lng      : " + str(state['y']), (400, 80), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "theta    : " + str(state['theta']), (400, 110), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "vel      : " + str(state['v']), (400, 140), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "ax       : " + str(state['ax']), (400, 170), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "ay       : " + str(state['ay']), (400, 200), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "omega    : " + str(state['omega']), (400, 230), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "dev      : " + str(state['target_deviation']), (400, 260), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "decision : " + self.get_decision(state['decision']), (400, 290), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+
+
+        # write data info on the left below corner (seq, data name, date)
+        cv2.putText(self.local_map, "seq       : " + str(state['seq']), (30, 500), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "data      : " + self.data_name, (30, 530), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "date      : " + self.date, (30, 560), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
+        cv2.putText(self.local_map, "copyright : " + self.copy_right, (30, 590), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
 
 
         # print log in the terminal
+        print("============================")
+        for key, value in state.itmes():
+            print(key, ' : ', value)
 
 
-    def save_state(self):
-        """
-        save state to .json file
-        return state dictionary
-        """
-        rt = {}
-        rt['x'] = self.x
-        rt['y'] = self.y
-        rt['v'] = self.v
-        rt['ax'] = self.ax
-        rt['ay'] = self.ay
-        rt['theta'] = self.theta
-        rt['omega'] = self.omega
-        rt['decision'] = self.lane_decision
-        rt['lateral_deviation'] = self.lateral_deviation
+    
 
-        rt['seq'] = self.seq
-        rt['author'] = self.author
-        rt['email'] = self.email
-        rt['copy_right'] = self.copy_right
-        rt['date'] = self.date
-        rt['data_name'] = self.data_name
-
-        save_path = self.state_path + str(self.seq).zfill(6) + ".json"
-        with open(save_path, 'w') as outfile:
-            json.dump(rt, outfile, indent=4)
-
-        return rt
+if __name__=='__main__':
+    rospy.init_node("data_collector", anonymous=True)
+    data_collector = DataCollector()
+    rospy.spin()
