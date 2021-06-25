@@ -90,7 +90,7 @@ class Data:
             else :
                 self.obstacles.append(utils.decode_obstacle(ObstacleA, ObstacleB, ObstacleC))
 
-        print("Success to decode %d-th data" %(self.seq))
+        # print("Success to decode %d-th data" %(self.seq))
         return self.valid
 
     def get_data(self):

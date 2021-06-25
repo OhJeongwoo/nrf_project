@@ -117,14 +117,14 @@ class PCANDecoder:
         self.pub_ = rospy.Publisher("/mobileye", Mobileye, queue_size=20)
         
 
-        if not os.path.exists(self.result_path):
-            os.mkdir(self.result_path)
-        if not os.path.exists(self.result_path + "state"):
-            os.mkdir(self.result_path+"state")
-        if not os.path.exists(self.result_path + "image_raw"):
-            os.mkdir(self.result_path+"image_raw")
-        if not os.path.exists(self.result_path + "local_map"):
-            os.mkdir(self.result_path+"local_map")
+        # if not os.path.exists(self.result_path):
+        #     os.mkdir(self.result_path)
+        # if not os.path.exists(self.result_path + "state"):
+        #     os.mkdir(self.result_path+"state")
+        # if not os.path.exists(self.result_path + "image_raw"):
+        #     os.mkdir(self.result_path+"image_raw")
+        # if not os.path.exists(self.result_path + "local_map"):
+        #     os.mkdir(self.result_path+"local_map")
         
 
 
@@ -185,7 +185,7 @@ class PCANDecoder:
         else:
             rt = generate_message(data)
 
-        self.save(data)
+        # self.save(data)
         
         self.pub_.publish(rt)
         

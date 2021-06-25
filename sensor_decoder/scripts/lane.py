@@ -12,8 +12,6 @@ class Lane:
         self.view_range = 0.0
         self.view_range_availability = False
 
-    def get_x(self, z):
-        return self.c0 + z * self.c1 + z * z * self.c2 + z * z * z * self.c3
 
     def get_lane(self):
         rt = {}

@@ -48,20 +48,16 @@ def clip(value, limit):
     else:
         return value / limit
 
+    
+def get_x(lane, z):
+    return lane.c[0] + z * lane.c[1] + z * z * lane.c[2] + z * z * z * lane.c[3]
+
 class DataCollector:
     def __init__(self):
-        self.sub_gps = rospy.Subscriber("/Inertial_Labs/ins_data", ins_data, self.callback_gps)
-        self.sub_imu = rospy.Subscriber("/Inertial_Labs/sensor_data", sensor_data, self.callback_imu)
-        self.sub_mobileye = rospy.Subscriber("/mobileye", Mobileye, self.callback_mobileye)
-        self.sub_decision = rospy.Subscriber("/decision", Int32, self.callback_decision)
-        self.sub_camera = rospy.Subscriber("/camera/color/image_raw", Image, self.callback_camera)
-        self.sub_lidar = rospy.Subscriber("/points_raw", PointCloud2, self.callback_lidar)
-        self.pub_local_map = rospy.Publisher("/local_map", Image)
-
         self.init_gps = False
         self.init_imu = False
         self.init_mobileye = False
-        self.init_camera = False
+        self.init_camera = True
         self.init_lidar = False
 
         self.bridge = CvBridge()
@@ -129,9 +125,20 @@ class DataCollector:
         if not os.path.exists(self.local_map_path):
             os.mkdir(self.local_map_path)
 
+        self.sub_gps = rospy.Subscriber("/Inertial_Labs/ins_data", ins_data, self.callback_gps)
+        self.sub_imu = rospy.Subscriber("/Inertial_Labs/sensor_data", sensor_data, self.callback_imu)
+        self.sub_mobileye = rospy.Subscriber("/mobileye", Mobileye, self.callback_mobileye)
+        self.sub_decision = rospy.Subscriber("/decision", Int32, self.callback_decision)
+        self.sub_camera = rospy.Subscriber("/camera/color/image_raw", Image, self.callback_camera)
+        self.sub_lidar = rospy.Subscriber("/points_raw", PointCloud2, self.callback_lidar)
+        self.pub_local_map = rospy.Publisher("/local_map", Image)
+
+
     def xy_to_pixel(self, x, y):
-        px = int((x - self.cx) / self.resolution + self.bev_width / 2)
-        py = int(-(y - self.cy) / self.resolution + self.bev_height / 2)
+        # px = int((x - self.cx) / self.resolution + self.bev_width / 2)
+        # py = int(-(y - self.cy) / self.resolution + self.bev_height / 2)
+        px = int((y-self.minY)/self.resolution)
+        py = int(-(x-self.maxX)/self.resolution)
         return px, py
 
     def get_decision(self, type):
@@ -178,7 +185,7 @@ class DataCollector:
     def draw_lanes(self):
         for lane in self.lanes:
             for i in range(self.n_marked_lane):
-                cv2.circle(self.local_map, self.xy_to_pixel(lane.get_x(0.1*i), 0.1*i), 1.0, (0,255,0), -1)
+                cv2.circle(self.local_map, (self.xy_to_pixel(0.1*i, get_x(lane,0.1*i))), 1, (0,255,0), -1)
             
 
     def callback_gps(self, msg):
@@ -344,7 +351,7 @@ class DataCollector:
         arr[2::4] = z
         arr[3::4] = intensity
         arr.astype('float32').tofile(self.bin_path + str(self.seq).zfill(6) + '.bin')
-        pc.save_pcd(self.pcd_path + str(self.seq).zfill(6) + '.pcd', compression='binary_compressed')
+        # pc.save_pcd(self.pcd_path + str(self.seq).zfill(6) + '.pcd', compression='binary_compressed')
         
         # generate bev map with pointclouds and save it
         # filter point cloud
@@ -360,17 +367,21 @@ class DataCollector:
 
         N = len(intensity)
 
-        intensity_layer = np.zeros([self.bev_height, self.bev_width], dtype=np.float)
-        density_layer = np.zeros([self.bev_height, self.bev_width], dtype=np.float)
-        height_layer = np.zeros([self.bev_height, self.bev_width], dtype=np.float)
+        intensity_layer = np.zeros([self.bev_width, self.bev_height], dtype=np.float)
+        density_layer = np.zeros([self.bev_width, self.bev_height], dtype=np.float)
+        height_layer = np.zeros([self.bev_width, self.bev_height], dtype=np.float)
 
         for i in range(N):
             px, py = self.xy_to_pixel(x[i], y[i])
+            if px < 0 or px >= self.bev_width or py <0 or py >= self.bev_height :
+                continue
             intensity_layer[px][py] = max(intensity_layer[px][py], intensity[i])
             density_layer[px][py] += 1
-            height_layer = max(height_layer[px][py], (z[i]-self.minZ)/(self.maxZ-self.minZ))
+            height_layer[px][py] = max(height_layer[px][py], (z[i]-self.minZ)/(self.maxZ-self.minZ))
         
-        density_layer = min(1.0, math.log(1 + density_layer) / self.logDensity)
+        for i in range(self.bev_width):
+            for j in range(self.bev_height):
+                density_layer[i][j] = min(1.0, math.log(1 + density_layer[i][j]) / self.logDensity)
 
         intensity_layer = intensity_layer * 255.0
         density_layer = density_layer * 255.0
@@ -381,7 +392,7 @@ class DataCollector:
         height_layer = np.expand_dims(height_layer.astype('uint8'), axis = 0)
         
         bev_map = np.transpose(np.vstack((intensity_layer, density_layer, height_layer)), (1,2,0))
-        bev_map = cv2.resize(bev_map, (self.bev_height, self.bev_width))
+        bev_map = cv2.resize(bev_map, (self.bev_width, self.bev_height))
         cv2.imwrite(self.bev_map_path + str(self.seq).zfill(6) + ".png", bev_map)
 
         # generate local map and save it
@@ -391,7 +402,7 @@ class DataCollector:
         self.draw_lanes()
 
         # draw heading indicator
-        cv2.circle(self.local_map, (100, 100), 50.0, (255,255,255), 2)
+        cv2.circle(self.local_map, (100, 100), 50, (255,255,255), 2)
         cv2.line(self.local_map, (100,100), (int(100+30.0*math.cos(state['theta'])),int(100+30.0*math.sin(state['theta']))), (255, 0, 0), 1)
         
         # draw box for v, ax, ay, omega, lateral deviation indicator
@@ -431,10 +442,11 @@ class DataCollector:
         cv2.putText(self.local_map, "date      : " + self.date, (30, 560), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
         cv2.putText(self.local_map, "copyright : " + self.copy_right, (30, 590), self.font, self.fontscale, (255, 255, 255), self.fontthickness, self.fontline)
 
+        cv2.imwrite(self.local_map_path + str(self.seq).zfill(6) + ".png", self.local_map)
 
         # print log in the terminal
         print("============================")
-        for key, value in state.itmes():
+        for key, value in state.items():
             print(key, ' : ', value)
 
 

@@ -10,7 +10,7 @@
     <include file="$(find realsense2_camera)/launch/rs_camera.launch"/>
 
     <!-- initialize velodyne -->
-    <inclue file="$(find runtime_manager)/launch_files/triple_vlp16.launch"/>
+    <!-- <inclue file="$(find runtime_manager)/launch_files/triple_vlp16.launch"/> -->
 
     <!-- run data collector -->
     <node name="data_collector" pkg="sensor_decoder" type="data_collector.py" output="screen"/>
