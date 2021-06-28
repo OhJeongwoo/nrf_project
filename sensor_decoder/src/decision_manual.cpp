@@ -23,11 +23,11 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "local_map_publisher");
     
     ros::NodeHandle nh;
-    ros::Publisher pub = nh.advertise<std_msgs::Int32>("/decision_signal", 1); 
+    ros::Publisher pub = nh.advertise<std_msgs::Int32>("/decision", 1); 
     std_msgs::Int32 rt;
     int signal = 1;
     while(true){
-        for(int i=1;i<=4;i++) cout << to_string(i) << " : " << get_mode(signal) << endl;
+        for(int i=1;i<=4;i++) cout << to_string(i) << " : " << get_mode(i) << endl;
         cout << "current mode is " << "\033[1;31m" << get_mode(signal)<< "\033[0m" << endl;
         cout << "PLEASE INPUT MODE..." << endl;
         cin >> signal;
