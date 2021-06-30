@@ -28,9 +28,9 @@ int main(int argc, char **argv){
     string path;
     
 
-    string data_name = "gunmin_04";
+    string data_name = "demo3";
     stringstream result_path;
-    result_path << ros::package::getPath("sensor_decoder") << "/result/" << data_name << "/";
+    result_path << ros::package::getPath("sensor_decoder") << "/data/" << data_name << "/";
     
     string image_raw_path = result_path.str() + "image_raw/";
     string local_map_path = result_path.str() + "local_map/";
@@ -41,8 +41,8 @@ int main(int argc, char **argv){
     string filename = result_path.str() + "video.avi";             // name of the output video file
     writer.open(filename, codec, fps, cv::Size(600,300));
 
-    int offset = 100;
-    int n_images = 15000;
+    int offset = 12999;
+    int n_images = 2000;
     for(int i=offset+1;i<=offset+n_images;i++){
         string cur_image_raw_path = image_raw_path + zfill(i) + ".png";
         string cur_local_map_path = local_map_path + zfill(i) + ".png";
