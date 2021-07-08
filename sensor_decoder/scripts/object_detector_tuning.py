@@ -5,17 +5,22 @@ import rospy
 import numpy as np
 from convex_hull import ConvexHull
 from convex_hull import Point
+from convex_hull import box_convex_hull
+from convex_hull import calculate_IOU
 import math
+import matplotlib.pyplot as plt
 
 #### hyperparameters ####
-data_name = "object_detector"
+data_name = "test3"
 data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
 bin_path = data_path + "bin/"
 label_path = data_path + "labels/"
-N = 10000 # # of data
+N = 8000 # # of data
 
-l_coeff = 0.01
+l_coeff = 0.1
 w_coeff = 0.1
+l_size_coeff = 0.1
+w_size_coeff = 0.1
 box_coeff = 1.0
 l_g = 5.0
 w_g = 2.5
@@ -32,7 +37,7 @@ resolution = 0.1
 grid_x = int((maxX-minX) / resolution)
 grid_y = int((maxY-minY) / resolution)
 
-max_iteration = 100
+max_iteration = 1000
 
 
 
@@ -74,9 +79,9 @@ def calculate_loss_and_grad(type, px, py, rx, ry, st, ct, x, y, l, w):
         return loss, grad_x, grad_y, grad_theta, grad_l, grad_w
     if type == 3:
         loss = values[type] ** 2
-        grad_x = 2.0 * (w/2 - ry) * st
-        grad_y = -2.0 * (w/2 - ry) * ct
-        grad_theta = -2.0 * (w/2 - ry) * ((px - x) * ct + (py - y) * st)
+        grad_x = 2.0 * (w/2 + ry) * st
+        grad_y = -2.0 * (w/2 + ry) * ct
+        grad_theta = -2.0 * (w/2 + ry) * ((px - x) * ct + (py - y) * st)
         grad_l = 0
         grad_w = w/2 + ry
         return loss, grad_x, grad_y, grad_theta, grad_l, grad_w
@@ -150,17 +155,21 @@ def calculate_box_loss(point, x, y, theta, l, w):
             rt_grad_theta += grad_theta
             rt_grad_l += grad_l
             rt_grad_w += grad_w
-        return rt_loss, rt_grad_x, rt_grad_y, rt_grad_theta, rt_grad_theta, rt_grad_l, rt_grad_w
+        return rt_loss, rt_grad_x, rt_grad_y, rt_grad_theta, rt_grad_l, rt_grad_w
 
 
 
 def build_grid_map(points):
-    grid_map = [[False] * grid_y for i in range(grid_x)]
+    grid_map = [[False] * grid_y for _ in range(grid_x)]
+    valid_cnt = 0
     for point in points:
         px, py = xy_to_pixel(point[0], point[1])
         if px < 0 or px >= grid_x or py < 0 or py >= grid_y:
             continue
         grid_map[px][py] = True
+        valid_cnt += 1
+        # print(px, py)
+    print(valid_cnt)
     return grid_map
 
 
@@ -172,7 +181,13 @@ def optimized_parameters(cvh):
     w = w_g
     prev_loss = None
     loss = 0.0
+    final_box_loss = 0.0
     for iter in range(max_iteration):
+        theta = theta - math.pi * 2 * int(theta / math.pi / 2)
+        if theta < -math.pi:
+            theta += math.pi
+        if theta > math.pi:
+            theta -= math.pi
         loss = 0.0
         grad_x = 0.0
         grad_y = 0.0
@@ -187,8 +202,14 @@ def optimized_parameters(cvh):
         grad_l += l_coeff * 2 * (l - l_g)
 
         # width loss
-        loss += w_coeff * (w-w_g) ** 2
+        loss += w_coeff * ((w-w_g) ** 2)
         grad_w += w_coeff * 2 * (w-w_g)
+
+        loss += l_size_coeff * (l ** 2)
+        grad_l += l_size_coeff * 2 * l
+
+        loss += w_size_coeff * (w ** 2)
+        grad_w += w_size_coeff * 2 * w
 
         # box loss
         total_box_loss = 0.0
@@ -212,6 +233,7 @@ def optimized_parameters(cvh):
         total_box_grad_theta /= cvh.n_points
         total_box_grad_l /= cvh.n_points
         total_box_grad_w /= cvh.n_points
+        final_box_loss = total_box_loss
 
         loss += box_coeff * total_box_loss
         grad_x += box_coeff * total_box_grad_x
@@ -231,18 +253,21 @@ def optimized_parameters(cvh):
         
         if prev_loss is not None:
             if abs(loss - prev_loss) < loss_threshold:
+                print("optimize!")
+                print(final_box_loss)
                 break
         prev_loss = loss
     
     return {'x' : x, 'y' : y, 'theta' : theta, 'l' : l, 'w' : w, 'loss' : loss}, loss
 
 
+
 # load dataset
 pointclouds = []
 labels = []
 for seq in range(N):
-    pointcloud = np.fromfile(bin_path + str(seq).zfill(6) + ".bin", dtype=np.float32).reshape(-1, 4)
-    with open(label_path+str(seq).zfill(6)+".json", "r") as label_json:
+    pointcloud = np.fromfile(bin_path + str(seq).zfill(7) + ".bin", dtype=np.float32).reshape(-1, 4)
+    with open(label_path+str(seq).zfill(7)+".json", "r") as label_json:
         label = json.load(label_json)
     pointclouds.append(pointcloud)
     labels.append(label)
@@ -256,8 +281,13 @@ y_error = 0.0
 theta_error = 0.0
 l_error = 0.0
 w_error = 0.0
+cnt = 0
+iou_list = []
+theta_diff = []
+x_diff = []
 for seq in range(N):
     # build grid map
+    print("# of pointclouds :", pointclouds[seq].size)
     grid_map = build_grid_map(pointclouds[seq])
 
     # extract points and build convex hull
@@ -275,9 +305,25 @@ for seq in range(N):
     solution, loss = optimized_parameters(ConvexHull(pts))
     label = labels[seq]
     loss_sum += loss
+    # label_cvh = box_convex_hull(label['x'], label['y'], label['theta'], label['l'], label['w'])
+    # solution_cvh = box_convex_hull(solution['x'], solution['y'], solution['theta'], solution['l'], solution['w'])
+    # iou = calculate_IOU(label_cvh, solution_cvh)
+    # iou_list.append(iou)
+    # if iou > 0.85:
+    #     cnt += 1
+    print("=======================================")
+    print(seq)
+    print(label)
+    print(solution)
+    # print(iou)
+    print("=======================================")
     x_error += (label['x'] - solution['x']) ** 2
     y_error += (label['y'] - solution['y']) ** 2
-    theta_error += (label['theta'] - solution['theta']) ** 2
+    dtheta = abs(label['theta'] - solution['theta'])
+    dtheta = min(dtheta, abs(dtheta-math.pi))
+    theta_error += (dtheta) ** 2
+    theta_diff.append(dtheta)
+    x_diff.append(label['x'] - solution['x'])
     l_error += (label['l'] - solution['l']) ** 2
     w_error += (label['w'] - solution['w']) ** 2
     
@@ -289,9 +335,17 @@ l_error /= N
 w_error /= N
 
 print("Mean loss : ", loss_sum)
-print("MSE x : ", x_error)
-print("MSE y : ", y_error)
-print("MSE theta : ", theta_error)
-print("MSE l : ", l_error)
-print("MSE w : ", w_error)
+print("MSE x : ", math.sqrt(x_error))
+print("MSE y : ", math.sqrt(y_error))
+print("MSE theta : ", math.sqrt(theta_error))
+print("MSE l : ", math.sqrt(l_error))
+print("MSE w : ", math.sqrt(w_error))
+
+plt.hist(theta_diff)
+plt.show()
+
+plt.hist(x_diff)
+plt.show()
+# print("Mean IOU : ", sum(iou_list)/len(iou_list))
+# print("AP 85% : ", 1.0*cnt / len(iou_list))
 

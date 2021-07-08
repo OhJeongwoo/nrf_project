@@ -16,6 +16,7 @@ bin_path = data_path + "bin/"
 object_path = data_path + "object/"
 N = 10000 # # of data
 
+
 minX = -20.0
 maxX = 40.0
 minY = -30.0

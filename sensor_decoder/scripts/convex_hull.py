@@ -1,3 +1,5 @@
+import math
+
 EPS = 1e-6
 
 class Point:
@@ -20,6 +22,7 @@ def ccw(a, b, c):
 class ConvexHull:
     def __init__(self, points):
         n = len(points)
+        print("# of convexpoints :",n)
         sorted(points)
         for i in range(1,n):
             points[i].p = points[i].x - points[0].x
@@ -53,6 +56,72 @@ class ConvexHull:
             sum_x += point.x
             sum_y += point.y
         return sum_x / self.n_points, sum_y / self.n_points
+    
+    def is_include(self, point):
+        value = ccw(point, self.points[self.n_points-1], self.points[0])
+        for i in range(1, self.n_points):
+            if value * ccw(point, self.points[i-1], self.points[i]) < 0:
+                return False
+        return True
+
+
+def rotation(x, y, theta):
+    ct = math.cos(theta)
+    st = math.sin(theta)
+    return x * ct - y * st, x * st + y * ct
+
+
+def box_convex_hull(x,y,theta,l,w):
+    pts = []
+    px, py = rotation(l/2, w/2, theta)
+    pts.append(Point(x+px, y+py))
+    t = math.atan((y+py)/(x+px))
+    px, py = rotation(l/2, -w/2, theta)
+    pts.append(Point(x+px, y+py))
+    px, py = rotation(-l/2, w/2, theta)
+    pts.append(Point(x+px, y+py))
+    px, py = rotation(-l/2, -w/2, theta)
+    pts.append(Point(x+px, y+py))
+    
+    return ConvexHull(pts)
+
+grid_size = 500
+def calculate_IOU(A, B):
+    """
+    calculate IOU between two Convex Hull
+    """
+    minX = 1e6
+    maxX = -1e6
+    minY = 1e6
+    maxY = -1e6
+    for point in A.points:
+        if point.x < minX:
+            minX = point.x
+        if point.x > maxX:
+            maxX = point.x
+        if point.y < minY:
+            minY = point.y
+        if point.y > maxY:
+            maxY = point.y
+    
+    n_A = 0
+    n_B = 0
+    n_AB = 0
+    for i in range(grid_size):
+        for j in range(grid_size):
+            x = minX + i / grid_size * (maxX - minX)
+            y = minY + j / grid_size * (maxY - minY)
+            p = Point(x,y)
+            a = A.is_include(p)
+            b = B.is_include(p)
+            if a:
+                n_A += 1
+            if b:
+                n_B += 1
+            if a and b:
+                n_AB += 1
+    return 1.0 * n_AB / (n_A + n_B - n_AB)
+
 
 # demo = []
 # demo.append(Point(1,0))
