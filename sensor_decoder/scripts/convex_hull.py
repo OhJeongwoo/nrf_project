@@ -1,6 +1,7 @@
 import math
 
 EPS = 1e-6
+INF = 1e9
 
 class Point:
     def __init__(self, x,y,p=1.0,q=0.0):
@@ -15,6 +16,14 @@ class Point:
         if abs(self.y - other.y) > EPS:
             return self.y > other.y
         return self.x > other.x
+
+class Line:
+    def __init__(self, s, e):
+        self.s = s
+        self.e = e
+
+    def length(self):
+        return math.sqrt(dist2(self.s,self.e))
 
 def ccw(a, b, c):
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
@@ -70,6 +79,12 @@ def rotation(x, y, theta):
     st = math.sin(theta)
     return x * ct - y * st, x * st + y * ct
 
+def area(a, b):
+    return 0.5 * abs(a.y * b.x - a.x * b.y)
+
+def vec(a,b):
+    return Point(b.x - a.x, b.y - a.y)
+
 
 def box_convex_hull(x,y,theta,l,w):
     pts = []
@@ -122,6 +137,65 @@ def calculate_IOU(A, B):
                 n_AB += 1
     return 1.0 * n_AB / (n_A + n_B - n_AB)
 
+def dist2(A, B):
+    return (A.x- B.x) ** 2 + (A.y - B.y) ** 2
+
+def valid(p, s, e):
+    d = math.sqrt(dist2(s, e))
+    x = math.sqrt(dist2(p, s))
+    y = math.sqrt(dist2(p, e))
+    if d + x < y or d + y < x :
+        return False
+    return True
+
+def line_distance(l1, l2):
+    rt = INF
+    rt = min(rt, dist2(l1.s, l2.s))
+    rt = min(rt, dist2(l1.s, l2.e))
+    rt = min(rt, dist2(l1.e, l2.s))
+    rt = min(rt, dist2(l1.e, l2.e))
+
+    rt = math.sqrt(rt)
+
+    if valid(l1.s, l2.s, l2.e):
+        rt = min(rt, 2.0 * area(vec(l1.s, l2.s), vec(l1.s, l2.e)) / l2.length())
+    
+    if valid(l1.e, l2.s, l2.e):
+        rt = min(rt, 2.0 * area(vec(l1.e, l2.s), vec(l1.e, l2.e)) / l2.length())
+    
+    if valid(l2.s, l1.s, l1.e):
+        rt = min(rt, 2.0 * area(vec(l2.s, l1.s), vec(l2.s, l1.e)) / l1.length())
+
+    if valid(l2.e, l1.s, l1.e):
+        rt = min(rt, 2.0 * area(vec(l2.e, l1.s), vec(l2.e, l1.e)) / l1.length())
+
+    return rt
+
+def get_clearance(A, B):
+    a = A.n_points
+    b = B.n_points
+    min_a = -1
+    min_b = -1
+    rt = INF
+    for i in range(a):
+        for j in range(b):
+            d = math.sqrt(dist2(A.points[i], B.points[j]))
+            if rt > d:
+                rt = d
+                min_a = i
+                min_b = j
+    rt = min(rt, line_distance(Line(A.points[(min_a-1+a)%a], A.points[min_a]), Line(B.points[(min_b-1+b)%b],B.points[min_b])));
+    rt = min(rt, line_distance(Line(A.points[(min_a-1+a)%a], A.points[min_a]), Line(B.points[(min_b+1+b)%b],B.points[min_b])));
+    rt = min(rt, line_distance(Line(A.points[(min_a+1+a)%a], A.points[min_a]), Line(B.points[(min_b-1+b)%b],B.points[min_b])));
+    rt = min(rt, line_distance(Line(A.points[(min_a+1+a)%a], A.points[min_a]), Line(B.points[(min_b+1+b)%b],B.points[min_b])));
+
+    return rt
+
+def merge_convex_hull(cvh_list):
+    pts = []
+    for cvh in cvh_list:
+        pts += cvh.points
+    return ConvexHull(pts)
 
 # demo = []
 # demo.append(Point(1,0))
