@@ -7,7 +7,7 @@ import json
 import math
 import time
 
-data_name = "demo3"
+data_name = "sumin_highway"
 data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
 state_path = data_path + "state/"
 bin_path = data_path + "bin/"
@@ -17,12 +17,14 @@ local_map_path = data_path + "local_map/"
 valid_path = data_path + "valid.txt"
 
 seq_list = []
-f = open(valid_path, 'r')
-while True:
-    line = f.readline()
-    if not line : break
-    seq_list.append(int(line))
-f.close()
+for i in range(5500,8500):
+    seq_list.append(i)
+# f = open(valid_path, 'r')
+# while True:
+#     line = f.readline()
+#     if not line : break
+#     seq_list.append(int(line))
+# f.close()
 
 # n_data = 20000 # number of data
 # start_data = 13000
@@ -35,15 +37,16 @@ minX = -20.0
 maxX = 40.0
 minY = -30.0
 maxY = 30.0
-minZ = -0.5
-maxZ = 3.5
+minZ = 0.2
+maxZ = 3.2
+
 resolution = 1.0
 bev_height = 60
 bev_width = 60
 cx = (minX + maxX) / 2.0
 cy = (minY + maxY) / 2.0
 
-maxlogDensity = math.log(2000)
+maxlogDensity = math.log(20)
 """
 For local map
 """
@@ -91,9 +94,29 @@ def get_x(lane, z):
 
 def draw_lanes(image, lanes):
     for lane in lanes:
-        for i in range(-n_marked_lane, n_marked_lane):
-            px, py = get_pixel(0.1*i, get_x(lane,0.1*i))
-            cv2.circle(image, (py, px), 1, (0,255,0), -1)
+        for i in range(-n_marked_lane, 2*n_marked_lane):
+            px, py = get_pixel(0.1*i, -get_x(lane,0.1*i))
+            cv2.circle(image, (py, px), 1, (0,255,255), -1)
+
+def draw_object(image, objects):
+    for i in range(len(objects)):
+        cx = objects[i]['x']
+        cy = objects[i]['y']
+        l = objects[i]['l']
+        w = objects[i]['w']
+        theta = objects[i]['theta']
+        box = []
+        box.append(get_pixel(cx + l/2 * math.cos(theta) - w/2 * math.sin(theta), cy + l/2 * math.sin(theta) + w/2 * math.cos(theta)))
+        box.append(get_pixel(cx - l/2 * math.cos(theta) - w/2 * math.sin(theta), cy - l/2 * math.sin(theta) + w/2 * math.cos(theta)))
+        box.append(get_pixel(cx - l/2 * math.cos(theta) + w/2 * math.sin(theta), cy - l/2 * math.sin(theta) - w/2 * math.cos(theta)))
+        box.append(get_pixel(cx + l/2 * math.cos(theta) + w/2 * math.sin(theta), cy + l/2 * math.sin(theta) - w/2 * math.cos(theta)))
+        box.append(get_pixel(cx, cy))
+        cv2.line(image, (box[0][1], box[0][0]), (box[1][1], box[1][0]), (0, 0, 255), 3)
+        cv2.line(image, (box[1][1], box[1][0]), (box[2][1], box[2][0]), (0, 0, 255), 3)
+        cv2.line(image, (box[2][1], box[2][0]), (box[3][1], box[3][0]), (0, 0, 255), 3)
+        cv2.line(image, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (0, 0, 255), 3)
+        cv2.putText(image, format(i,"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
+    
 
 init_time = time.time()
 cnt = 0
@@ -114,45 +137,47 @@ for seq in seq_list:
         dev_list.append(lane['c0'])
     dev_list = sorted(dev_list, key = abs)
     state['target_deviation'] = (dev_list[0] + dev_list[1]) / 2.0
+    
 
     # build bev map
     x = pcs[:,0]
     y = pcs[:,1]
     z = pcs[:,2]
     intensity = pcs[:,3]
-    x_filter = np.logical_and((x>minX), (x<maxX))
-    y_filter = np.logical_and((y>minY), (y<maxY))
-    z_filter = np.logical_and((z>minZ), (z<maxZ))
-    filter = np.logical_and(x_filter, y_filter, z_filter)
-    indices = np.argwhere(filter).flatten()
+    
+    indices = []
+    for i in range(len(pcs)):
+        if x[i] > minX and x[i] < maxX and y[i] > minY and y[i] < maxY and z[i] > minZ and z[i] < maxZ:
+            indices.append(i)
+    pcs = pcs[indices,:]
     x = x[indices]
     y = y[indices]
     z = z[indices]
     intensity = intensity[indices]
     n_points = len(intensity)
 
-    intensity_layer = np.zeros([bev_height, bev_width], dtype=np.float)
-    density_layer = np.zeros([bev_height, bev_width], dtype=np.float)
-    height_layer = np.zeros([bev_height, bev_width], dtype=np.float)
-    for i in range(n_points):
-        px, py = get_pixel(x[i], y[i])
-        if px < 0 or px >= bev_height or py < 0 or py >= bev_width:
-            continue
-        intensity_layer[px][py] = max(intensity_layer[px][py], intensity[i])
-        density_layer[px][py] += 1
-        height_layer[px][py] = max(height_layer[px][py], (z[i]-minZ)/ (maxZ-minZ))
-    for i in range(bev_height):
-        for j in range(bev_width):
-            density_layer[px][py] = min(1.0, math.log(1 + density_layer[px][py]) / maxlogDensity)
-    intensity_layer = intensity_layer * 255.0
-    density_layer = density_layer * 255.0
-    height_layer = height_layer * 255.0
-    intensity_layer = np.expand_dims(intensity_layer.astype('uint8'), axis = 0)
-    density_layer = np.expand_dims(density_layer.astype('uint8'), axis = 0)
-    height_layer = np.expand_dims(height_layer.astype('uint8'), axis = 0)
-    bev_map = np.transpose(np.vstack((intensity_layer, density_layer, height_layer)), (1,2,0))
-    bev_map = cv2.resize(bev_map, (bev_height, bev_width))
-    cv2.imwrite(bev_path + str(seq).zfill(6) + ".png", bev_map)
+    # intensity_layer = np.zeros([bev_height, bev_width], dtype=np.float)
+    # density_layer = np.zeros([bev_height, bev_width], dtype=np.float)
+    # height_layer = np.zeros([bev_height, bev_width], dtype=np.float)
+    # for i in range(n_points):
+    #     px, py = get_pixel(x[i], y[i])
+    #     if px < 0 or px >= bev_height or py < 0 or py >= bev_width:
+    #         continue
+    #     intensity_layer[px][py] = max(intensity_layer[px][py], intensity[i])
+    #     density_layer[px][py] += 1
+    #     height_layer[px][py] = max(height_layer[px][py], (z[i]-minZ)/ (maxZ-minZ))
+    # for i in range(bev_height):
+    #     for j in range(bev_width):
+    #         density_layer[px][py] = min(1.0, math.log(1 + density_layer[px][py]) / maxlogDensity)
+    # intensity_layer = intensity_layer * 255.0
+    # density_layer = density_layer * 255.0
+    # height_layer = height_layer * 255.0
+    # intensity_layer = np.expand_dims(intensity_layer.astype('uint8'), axis = 0)
+    # density_layer = np.expand_dims(density_layer.astype('uint8'), axis = 0)
+    # height_layer = np.expand_dims(height_layer.astype('uint8'), axis = 0)
+    # bev_map = np.transpose(np.vstack((intensity_layer, density_layer, height_layer)), (1,2,0))
+    # bev_map = cv2.resize(bev_map, (bev_height, bev_width))
+    # cv2.imwrite(bev_path + str(seq).zfill(6) + ".png", bev_map)
 
     
     resolution = 0.1
@@ -184,9 +209,11 @@ for seq in seq_list:
 
     draw_lanes(local_map, state['lanes'])
 
+    draw_object(local_map, state['objects'])
+
     # draw heading indicator
     cv2.circle(local_map, (100, 100), 50, (255,255,255), 2)
-    cv2.line(local_map, (100,100), (int(100+30.0*math.cos(state['theta'])),int(100+30.0*math.sin(state['theta']))), (255, 0, 0), 1)
+    cv2.line(local_map, (100,100), (int(100+30.0*math.cos(state['theta'])),int(100+30.0*math.sin(state['theta']))), (255, 255, 255), 3)
     
     # draw box for v, ax, ay, omega, lateral deviation indicator
     cv2.putText(local_map, "v", (20, 200), font, fontscale, (255, 255, 255), fontthickness, fontline)

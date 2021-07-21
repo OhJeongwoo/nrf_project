@@ -91,7 +91,7 @@ for seq in range(N):
         while d < 50.0:
             d += step_size
             point = Point(d * math.cos(beam_theta), d * math.sin(beam_theta))
-            if cvh.is_include(point):
+            if is_include(cvh, point):
                 pointclouds.append(Point(point.x + np.random.normal(0,0.03), point.y + np.random.normal(0, 0.03)))
                 hit = True
                 break

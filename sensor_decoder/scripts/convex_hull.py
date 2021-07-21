@@ -9,6 +9,7 @@ class Point:
         self.y = y
         self.p = p
         self.q = q
+        self.occluded = False
     
     def __gt__(self, other):
         if abs(self.q * other.p - self.p * other.q) > EPS:
@@ -28,11 +29,31 @@ class Line:
 def ccw(a, b, c):
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 
+
+def is_include(cvh, point):
+    value = ccw(point, cvh.points[cvh.n_points-1], cvh.points[0])
+    for i in range(1, cvh.n_points):
+        if value * ccw(point, cvh.points[i-1], cvh.points[i]) < 0:
+            return False
+    return True
+
+
+def rotation(x, y, theta):
+    ct = math.cos(theta)
+    st = math.sin(theta)
+    return x * ct - y * st, x * st + y * ct
+
+def area(a, b):
+    return 0.5 * abs(a.y * b.x - a.x * b.y)
+
+def vec(a,b):
+    return Point(b.x - a.x, b.y - a.y)
+
+
 class ConvexHull:
     def __init__(self, points):
         n = len(points)
-        print("# of convexpoints :",n)
-        sorted(points)
+        points = sorted(points)
         for i in range(1,n):
             points[i].p = points[i].x - points[0].x
             points[i].q = points[i].y - points[0].y
@@ -56,7 +77,37 @@ class ConvexHull:
         for i in range(len(index)):
             self.points.append(points[index[i]])
         self.n_points = len(self.points)
-        
+
+        # check if it includes origin. convex hull is valid iff it does not include origin.
+        if is_include(self, Point(0,0)):
+            self.valid = False
+        else :
+            self.valid = True
+            angle = []
+            for i in range(self.n_points):
+                angle.append([math.atan2(self.points[i].y, self.points[i].x), i])
+            angle = sorted(angle)
+            check = False
+            index = -1
+            for i in range(self.n_points - 1):
+                if angle[i+1][0] - angle[i][0] > math.pi:
+                    check = True
+                    index = i
+                    break
+            if check:
+                left = angle[index][1]
+                right = angle[index+1][1]
+            else :
+                left = angle[0][1]
+                right = angle[self.n_points-1][1]
+            A = area(self.points[left], self.points[right])
+            for i in range(self.n_points -1):
+                if left == i or right == i:
+                    continue
+                if area(self.points[left], self.points[i]) + area(self.points[right], self.points[i]) > A:
+                    self.points[i].occluded = True
+
+
 
     def get_center(self):
         sum_x = 0.0
@@ -66,24 +117,8 @@ class ConvexHull:
             sum_y += point.y
         return sum_x / self.n_points, sum_y / self.n_points
     
-    def is_include(self, point):
-        value = ccw(point, self.points[self.n_points-1], self.points[0])
-        for i in range(1, self.n_points):
-            if value * ccw(point, self.points[i-1], self.points[i]) < 0:
-                return False
-        return True
+    
 
-
-def rotation(x, y, theta):
-    ct = math.cos(theta)
-    st = math.sin(theta)
-    return x * ct - y * st, x * st + y * ct
-
-def area(a, b):
-    return 0.5 * abs(a.y * b.x - a.x * b.y)
-
-def vec(a,b):
-    return Point(b.x - a.x, b.y - a.y)
 
 
 def box_convex_hull(x,y,theta,l,w):
@@ -127,8 +162,8 @@ def calculate_IOU(A, B):
             x = minX + i / grid_size * (maxX - minX)
             y = minY + j / grid_size * (maxY - minY)
             p = Point(x,y)
-            a = A.is_include(p)
-            b = B.is_include(p)
+            a = is_include(A, p)
+            b = is_include(B, p)
             if a:
                 n_A += 1
             if b:
@@ -141,14 +176,22 @@ def dist2(A, B):
     return (A.x- B.x) ** 2 + (A.y - B.y) ** 2
 
 def valid(p, s, e):
-    d = math.sqrt(dist2(s, e))
-    x = math.sqrt(dist2(p, s))
-    y = math.sqrt(dist2(p, e))
+    d = dist2(s, e)
+    x = dist2(p, s)
+    y = dist2(p, e)
     if d + x < y or d + y < x :
         return False
     return True
 
 def line_distance(l1, l2):
+    # print(l1.s.x)
+    # print(l1.s.y)
+    # print(l1.e.x)
+    # print(l1.e.y)
+    # print(l2.s.x)
+    # print(l2.s.y)
+    # print(l2.e.x)
+    # print(l2.e.y)
     rt = INF
     rt = min(rt, dist2(l1.s, l2.s))
     rt = min(rt, dist2(l1.s, l2.e))
@@ -172,22 +215,27 @@ def line_distance(l1, l2):
     return rt
 
 def get_clearance(A, B):
+    # rt = dist2(A.points[0], B.points[0])
+    # for a in range(A.n_points):
+    #     for b in range(B.n_points):
+    #         rt = min(rt, dist2(A.points[a], B.points[b]))
+    # print(rt)    
+    # return math.sqrt(rt)
     a = A.n_points
     b = B.n_points
-    min_a = -1
-    min_b = -1
     rt = INF
     for i in range(a):
+        if is_include(B, A.points[i]):
+            return 0.0
+    for i in range(b):
+        if is_include(A, B.points[i]):
+            return 0.0
+    
+    for i in range(a):
         for j in range(b):
-            d = math.sqrt(dist2(A.points[i], B.points[j]))
+            d = line_distance(Line(A.points[i], A.points[(i+1)%a]), Line(B.points[j], B.points[(j+1)%b]))
             if rt > d:
                 rt = d
-                min_a = i
-                min_b = j
-    rt = min(rt, line_distance(Line(A.points[(min_a-1+a)%a], A.points[min_a]), Line(B.points[(min_b-1+b)%b],B.points[min_b])));
-    rt = min(rt, line_distance(Line(A.points[(min_a-1+a)%a], A.points[min_a]), Line(B.points[(min_b+1+b)%b],B.points[min_b])));
-    rt = min(rt, line_distance(Line(A.points[(min_a+1+a)%a], A.points[min_a]), Line(B.points[(min_b-1+b)%b],B.points[min_b])));
-    rt = min(rt, line_distance(Line(A.points[(min_a+1+a)%a], A.points[min_a]), Line(B.points[(min_b+1+b)%b],B.points[min_b])));
 
     return rt
 

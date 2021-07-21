@@ -90,8 +90,15 @@ add_dependencies(decision_manual ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 #target_link_libraries(pcan_topic_generator ${catkin_LIBRARIES})
 #add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+######################################POST PROCESSING VIZ TOOL######################################
+add_executable(query_viz_tool src/query_viz_tool.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(query_viz_tool ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(query_viz_tool ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+####################################################################################################
+
 catkin_install_python(PROGRAMS
   scripts/pcan_decoder.py
+  scripts/object_query.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

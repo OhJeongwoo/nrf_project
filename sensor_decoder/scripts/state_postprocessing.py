@@ -7,13 +7,13 @@ import json
 import math
 import time
 
-data_name = "demo3"
+data_name = "sumin_highway"
 data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
 state_path = data_path + "state/"
 
 start_data = 1
-end_data = 20613
-invalid = (8933, 9409)
+end_data = 10344
+# invalid = (8933, 9409)
 
 
 prev_state = None
@@ -24,11 +24,12 @@ valid_list = []
 
 for seq in range(start_data, end_data):
     print(seq)
-    if seq in range(invalid[0], invalid[1]):
-        continue
+    # if seq in range(invalid[0], invalid[1]):
+    #     continue
     with open(state_path+str(seq).zfill(6)+".json", "r") as st_json:
         state = json.load(st_json)
     
+    state['data_name'] = data_name
     # add lateral deviation
     dev_list = []
     for lane in state['lanes']:
