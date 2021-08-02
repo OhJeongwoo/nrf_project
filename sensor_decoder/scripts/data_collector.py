@@ -68,9 +68,9 @@ class DataCollector:
         self.email = "jeongwoo.oh@rllab.snu.ac.kr"
         self.copy_right = "RLLAB@SNU"
         self.date = datetime.datetime.now().strftime("%Y-%m-%d")
-        self.data_name = "demo3"
-        # self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
-        self.data_path = "/media/jeongwoooh/Samsung USB/data/" + self.data_name + "/"
+        self.data_name = "0729_exp_sumin_highway"
+        self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
+        # self.data_path = "/media/jeongwoooh/Samsung USB/data/" + self.data_name + "/"
 
         self.state_path = self.data_path + "state/"
         self.image_raw_path = self.data_path + "image_raw/"
@@ -78,7 +78,7 @@ class DataCollector:
         self.pcd_path = self.data_path + "pcd/"
         self.bev_map_path = self.data_path + "bev_map/"
         self.local_map_path = self.data_path + "local_map/"
-        
+        self.object_path = self.data_path + "object/"
 
         self.lanes = []
         self.decision = KEEPING_LANE
@@ -126,6 +126,8 @@ class DataCollector:
             os.mkdir(self.bev_map_path)
         if not os.path.exists(self.local_map_path):
             os.mkdir(self.local_map_path)
+        if not os.path.exists(self.object_path):
+            os.mkdir(self.object_path)
 
         self.gps_time_threshold = 0.2
         self.imu_time_threshold = 0.2

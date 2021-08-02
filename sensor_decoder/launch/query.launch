@@ -1,0 +1,3 @@
+<launch>
+    <node name="query_viz_tool" pkg="sensor_decoder" type="query_viz_tool.py" output="screen"/>
+</launch>

@@ -7,7 +7,7 @@ import json
 import math
 import time
 
-data_name = "sumin_highway"
+data_name = "0729_exp_gunmin_highway"
 data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
 state_path = data_path + "state/"
 bin_path = data_path + "bin/"
@@ -17,7 +17,7 @@ local_map_path = data_path + "local_map/"
 valid_path = data_path + "valid.txt"
 
 seq_list = []
-for i in range(5500,8500):
+for i in range(1, 2000):
     seq_list.append(i)
 # f = open(valid_path, 'r')
 # while True:
@@ -37,8 +37,8 @@ minX = -20.0
 maxX = 40.0
 minY = -30.0
 maxY = 30.0
-minZ = 0.2
-maxZ = 3.2
+minZ = 0.5
+maxZ = 2.0
 
 resolution = 1.0
 bev_height = 60

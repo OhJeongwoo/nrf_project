@@ -18,8 +18,8 @@ bin_path = data_path + "bin/"
 state_path = data_path + "state/"
 object_path = data_path + "object/"
 check_path = data_path + "check/"
-start_data = 5500
-end_data = 8500
+start_data = 7500
+end_data = 8000
 N = end_data -start_data
 SVAL = 1e-3
 

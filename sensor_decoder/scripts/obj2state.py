@@ -1,17 +1,7 @@
 import rospy
 import rospkg
-
-import numpy as np
-import cv2
 import json
-import math
 import time
-
-
-
-# start_data = 1
-# end_data = 5001
-# invalid = (8933, 9409)
 
 data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_exp_gunmin_highway'
@@ -213,79 +203,39 @@ n_data_list = [2519,
             322,
             515]
 
-prev_state = None
-prev_theta = 0.0
-
 N = len(data_name_list)
 
 start = time.time()
 end = time.time()
 
-for i, data_name in enumerate(data_name_list):
-    print("[%d / %d, %.2f] Start to state post-processing, data name is %s" %(i+1, N, end - start, data_name))
+for i, data_name in enumerate(data_name_list) :
+    print("[%d / %d, %.2f] Start to object processing, data name is %s" %(i+1, N, end - start, data_name))
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
+    obj_path = data_path + "object/"
     state_path = data_path + "state/"
-
     M = n_data_list[i]
-
-    for seq in range(1, M+1):
+    for seq in range(1, M + 1):
         state_file = state_path + str(seq).zfill(6) + ".json"
+        object_file = obj_path + str(seq).zfill(6) + ".txt"
+
         with open(state_file, "r") as st_json:
             state = json.load(st_json)
 
-        state['data_name'] = data_name
-
-        # add lateral deviation
-        dev_list = []
-        for lane in state['lanes']:
-            dev_list.append(lane['c0'])
-        dev_list = sorted(dev_list, key = abs)
-        state['target_deviation'] = (dev_list[0] + dev_list[1]) / 2.0
-
-        # revise decision
-        # if v is small, decision turns into stop(4), and theta still keeps previous value
-        # if v is not small but decision is stop(4), decision turns into keep lane(1)
-        if state['v'] < 1.0:
-            state['decision'] = 4
-            state['theta'] = prev_theta
-        else :
-            if state['decision'] == 4:
-                state['decision'] = 1
-            prev_theta = state['theta']
-
-        # add tunnel attributes
-        # if v is not small and location doesn't change, is_tunnel is true
-        if prev_state is None:
-            state['is_tunnel'] = False
-        else :
-            distance = math.sqrt((prev_state['x'] - state['x']) ** 2 + (prev_state['y'] - state['y']) ** 2)
-            if state['v'] > 5.0 and distance < 1e-7:
-                state['is_tunnel'] = True
-                # print("[WARN] %d-th seq is in a tunnel" %(seq))
-            else :
-                state['is_tunnel'] = False
-
+        with open(object_file, "r") as f:
+            objects = []
+            for line in f :
+                box = line.split()
+                obj = {"loss":{"box":float(box[1]), "total":float(box[0])}, "x":float(box[2]), "y":float(box[3]), "theta":float(box[4]), "l":float(box[5]), "w":float(box[6]), "valid":False}
+                objects.append(obj)
+            state["objects"] = objects
 
         with open(state_file, 'w') as outfile:
                 json.dump(state, outfile, indent=4)
 
-        prev_state = state
-
         end = time.time()
+        
         if seq % 1000 == 0:
-            print("[%d / %d, %.2f] In progress to state post-processing" %(seq, M, end-start))
-    
+            print("[%d / %d, %.2f] In progress to object processing" %(seq, M, end-start))
 
-
-# for seq in range(start_data, end_data):
-#     print(seq)
-#     # if seq in range(invalid[0], invalid[1]):
-#     #     continue
-#     with open(state_path+str(seq).zfill(6)+".json", "r") as st_json:
-#         state = json.load(st_json)
-
-    
-    
-    
 
 

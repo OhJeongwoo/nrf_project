@@ -31,7 +31,7 @@ find_package(PCL 1.8 REQUIRED)
 add_message_files(
   DIRECTORY msg
   FILES 
-  LaneMsg.msg ObstacleMsg.msg PCAN.msg PCANArray.msg Mobileye.msg
+  LaneMsg.msg ObstacleMsg.msg PCAN.msg PCANArray.msg Mobileye.msg Data.msg Object.msg Label.msg
 )
 
 generate_messages(DEPENDENCIES std_msgs geometry_msgs sensor_msgs)
@@ -40,11 +40,11 @@ catkin_package(
 	CATKIN_DEPENDS message_runtime roscpp std_msgs sensor_msgs
 	DEPENDS Eigen
 	opencv_highgui opencv_imgproc
+  INCLUDE_DIRS include
+	LIBRARIES ${PROJECT_NAME}
 )
 
 find_package(OpenCV REQUIRED)
-include_directories( ${OpenCV_INCLUDE_DIRS} )
-
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
  )
 
@@ -52,10 +52,16 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGE
 
 set (SOURCES
  #${CMAKE_CURRENT_SOURCE_DIR}/lib/{LIB_NAME}.cpp
+ ${CMAKE_CURRENT_SOURCE_DIR}/lib/utils.cpp
 )
 
 set (HEADERS
  #${CMAKE_CURRENT_SOURCE_DIR}/include/{LIB_NAME}.h
+ ${CMAKE_CURRENT_SOURCE_DIR}/include/utils.h
+)
+
+add_library(${PROJECT_NAME}
+  lib/utils.cpp
 )
 
 add_executable(pcan_reader src/pcan_reader.cpp ${HEADERS} ${SOURCES})
@@ -91,14 +97,19 @@ add_dependencies(decision_manual ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 #add_dependencies(pcan_topic_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ######################################POST PROCESSING VIZ TOOL######################################
-add_executable(query_viz_tool src/query_viz_tool.cpp ${HEADERS} ${SOURCES})
-target_link_libraries(query_viz_tool ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
-add_dependencies(query_viz_tool ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_executable(query_viz_tool src/query_viz_tool.cpp ${HEADERS} ${SOURCES})
+# target_link_libraries(query_viz_tool ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS})
+# add_dependencies(query_viz_tool ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ####################################################################################################
+
+add_executable(object_detector src/object_detector.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(object_detector ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+add_dependencies(object_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python(PROGRAMS
   scripts/pcan_decoder.py
   scripts/object_query.py
+  scripts/query_viz_tool.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
