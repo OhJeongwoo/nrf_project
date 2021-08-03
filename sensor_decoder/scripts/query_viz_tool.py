@@ -82,12 +82,14 @@ class QueryVizTool:
                 cv2.line(local_map, (box[1][1], box[1][0]), (box[2][1], box[2][0]), (0, 0, 255), 2)
                 cv2.line(local_map, (box[2][1], box[2][0]), (box[3][1], box[3][0]), (0, 0, 255), 2)
                 cv2.line(local_map, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (0, 255, 255), 2)
+                cv2.putText(local_map, format(objects[i].id,"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
             else :
-                cv2.line(local_map, (box[0][1], box[0][0]), (box[1][1], box[1][0]), (255, 0, 0), 1)
-                cv2.line(local_map, (box[1][1], box[1][0]), (box[2][1], box[2][0]), (255, 0, 0), 1)
-                cv2.line(local_map, (box[2][1], box[2][0]), (box[3][1], box[3][0]), (255, 0, 0), 1)
-                cv2.line(local_map, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (255, 255, 0), 1)
-            cv2.putText(local_map, format(objects[i].id,"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
+                if not self.only_valid :    
+                    cv2.line(local_map, (box[0][1], box[0][0]), (box[1][1], box[1][0]), (255, 0, 0), 1)
+                    cv2.line(local_map, (box[1][1], box[1][0]), (box[2][1], box[2][0]), (255, 0, 0), 1)
+                    cv2.line(local_map, (box[2][1], box[2][0]), (box[3][1], box[3][0]), (255, 0, 0), 1)
+                    cv2.line(local_map, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (255, 255, 0), 1)
+                    cv2.putText(local_map, format(objects[i].id,"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
   
         self.local_map = local_map
 
@@ -152,6 +154,7 @@ class QueryVizTool:
 
     def callback_label(self, msg):
         # update local map
+        self.only_valid = msg.only_valid
         self.draw_object(msg.objects)
         self.valid_label = True
 
