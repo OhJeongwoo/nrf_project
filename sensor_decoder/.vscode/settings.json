@@ -6,5 +6,15 @@
     "python.analysis.extraPaths": [
         "/home/jeongwoooh/catkin_ws/devel/lib/python2.7/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+    ],
+    "files.associations": {
+        "vector": "cpp",
+        "iostream": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "bitset": "cpp",
+        "string_view": "cpp",
+        "ostream": "cpp",
+        "iosfwd": "cpp"
+    }
 }

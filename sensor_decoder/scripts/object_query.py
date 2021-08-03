@@ -402,10 +402,11 @@ class ObjectQuery:
         en = seq_list[self.data_name_index][1]
         N = en - st
         valid_list = []
-        for seq in range(st+1, en):
+        for seq in range(st + 1, en + 1):
             self.current_state_path = self.state_path+str(seq).zfill(6)+".json"
             with open(self.current_state_path, "r") as st_json:
                 self.state = json.load(st_json)
+            
             check = False
             for obj in self.state['objects']:
                 if obj['valid']:
@@ -414,7 +415,7 @@ class ObjectQuery:
             if check:
                 valid_list.append(seq)
         
-            if (seq - st) % 1 == 0:
+            if (seq - st) % 10 == 0:
                 print("[%d/%d] Searching valid sequence from data named %s" %(seq - st, N, self.data_name))
         print("Finish searching valid list")
         print("Valid list")
