@@ -479,16 +479,14 @@ class ObjectQuery:
                 print("w : change x value")
                 y = raw_input()
                 print("input value")
+                print("x,y, theta는 변화량 입력, l,w는 값을 입력")
                 z = input()
                 if y == 'x':
-                    self.state['objects'][x]['x'] = z
+                    self.state['objects'][x]['x'] += z
                 if y == 'y':
-                    self.state['objects'][x]['y'] = z
+                    self.state['objects'][x]['y'] += z
                 if y == 't':
-                    if abs(z) > 180.0:
-                        print("invalid value. theta must be in range (-180, 180)")
-                    else : 
-                        self.state['objects'][x]['theta'] = z * math.pi / 180
+                    self.state['objects'][x]['theta'] += z * math.pi / 180
                 if y == 'l':
                     self.state['objects'][x]['l'] = z
                 if y == 'w':
