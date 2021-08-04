@@ -479,7 +479,6 @@ class ObjectQuery:
                 print("w : change x value")
                 y = raw_input()
                 print("input value")
-                print("x,y, theta는 변화량 입력, l,w는 값을 입력")
                 z = input()
                 if y == 'x':
                     self.state['objects'][x]['x'] += z
