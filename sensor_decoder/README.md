@@ -102,3 +102,13 @@ neg: 4710
 0729_neg_wooseok_48: 131-150 / 20
 0729_neg_wooseok_50_1: 31-130 / 100
 0729_neg_wooseok_50_2: 171-220 / 50
+
+
+object labeling process
+
+1) valid labeling : removes non-vehicle bounding box and remains only vehicle bounding box
+2) extract new state
+3) assign object id : using distance based matching algorithm, assign id for each object
+4) initialize theta and fix theta value : fix theta value for the first step of each object id
+5) labeling for rotating object : manually work
+6) fix l,w value and fix x,y based on l,w
