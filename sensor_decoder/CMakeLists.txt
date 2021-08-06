@@ -110,6 +110,7 @@ catkin_install_python(PROGRAMS
   scripts/pcan_decoder.py
   scripts/object_query.py
   scripts/query_viz_tool.py
+  scripts/accel_tuning.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
