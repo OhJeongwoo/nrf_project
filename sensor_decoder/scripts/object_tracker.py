@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os
 import rospy
 import rospkg
@@ -29,7 +30,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_gunmin_28_1'
                 ,'0729_neg_gunmin_28_2'
                 ,'0729_neg_gunmin_29_1'
-                ,'0729_neg_gunmin_29_2'
                 ,'0729_neg_gunmin_30_1'
                 ,'0729_neg_gunmin_30_2'
                 ,'0729_neg_gunmin_31_1'
@@ -94,7 +94,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_30_2'
                 ,'0729_neg_wooseok_31_1'
                 ,'0729_neg_wooseok_31_2'
-                ,'0729_neg_wooseok_34_1'
                 ,'0729_neg_wooseok_34_2'
                 ,'0729_neg_wooseok_35_1'
                 ,'0729_neg_wooseok_35_2'
@@ -104,17 +103,16 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_37_2'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
-                ,'0729_neg_wooseok_48'
                 ,'0729_neg_wooseok_50_1'
                 ,'0729_neg_wooseok_50_2']
 
 seq_list = [(50,2450),
             (6000,9000),
-            (4000,7000),
+            (5000,8000),
             (0,2200),
             (150,2550),
             (500,3500),
-            (5000,8000),
+            (6000,9000),
             (50,1450),
             (40,140),
             (0,140),
@@ -129,15 +127,14 @@ seq_list = [(50,2450),
             (200,220),
             (120,140),
             (120,140),
-            (110,140),
             (130,160),
             (180,200),
             (160,180),
             (145,165),
-            (110,130),
-            (80,110),
-            (120,150),
-            (170,200),
+            (120,140),
+            (90,110),
+            (140,160),
+            (180,200),
             (120,140),
             (180,200),
             (80,100),
@@ -173,7 +170,7 @@ seq_list = [(50,2450),
             (155,175),
             (120,140),
             (190,210),
-            (140,170),
+            (140,160),
             (110,130),
             (130,150),
             (80,250),
@@ -194,7 +191,6 @@ seq_list = [(50,2450),
             (90,110),
             (70,90),
             (110,130),
-            (120,140),
             (130,150),
             (90,110),
             (90,110),
@@ -204,28 +200,48 @@ seq_list = [(50,2450),
             (110,140),
             (170,190),
             (160,190),
-            (130,150),
             (30,130),
             (170,220)]
 
-score_threshold = 3.0
-P_init = np.eyes(9)
-Q = np.eyes(9)
-R = np.eyes(6)
-H = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],])
+score_threshold = 0.2
+MAX_RELIABILITY = 5
+P_init = np.array([[4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                   [0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0],
+                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.0],
+                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4]])
 
+Q = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.4, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.04, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.04, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4]])
+
+R = np.array([[2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 2.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.02, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.04, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.04, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.04]])
+
+H = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
 
 def predict(obj):
-    state = np.array(obj['state'])
-    dt = obj['dt']
+    state = obj['state']
+    dt = 0.1
     xt = state[0]
     yt = state[1]
     tt = state[2]
@@ -235,9 +251,45 @@ def predict(obj):
     ve = state[6]
     ae = state[7]
     we = state[8]
-    F = np.zeros(9,9)
+
+    F = np.zeros((9,9))
     
+    # F[0,0] = 1.0
+    # F[0,1] = 0.0
+    # F[0,2] = -math.sin(tt) * (vt * dt)
+    # F[0,3] = math.cos(tt) * dt 
+    # F[0,4] = 0.0
+    # F[0,5] = 0.0
+    # F[0,6] = -dt
+    # F[0,7] = 0.0
+    # F[0,8] = 0.0
+
+    # F[1,0] = 0.0
+    # F[1,1] = 1.0
+    # F[1,2] = math.cos(tt) * (vt * dt)
+    # F[1,3] = math.sin(tt)
+    # F[1,7] = 0.0
     
+
+    # F[2,2] = 1.0
+    # F[2,5] = dt
+    # F[2,8] = -dt
+
+    # F[3,3] = 1.0
+    # F[3,4] = dt
+
+    # F[4,4] = 1.0
+
+    # F[5,5] = 1.0
+
+    # F[6,6] = 1.0
+    # F[6,7] = dt
+
+    # F[7,7] = 1.0
+
+    # F[8,8] = 1.0
+
+
     F[0,0] = 1.0
     F[0,1] = 0.0
     F[0,2] = -math.sin(tt) * (vt * dt + 0.5 * at * dt * dt) - math.cos(tt) * 0.5 * vt * wt * dt * dt
@@ -264,40 +316,52 @@ def predict(obj):
     F[2,8] = -dt
 
     F[3,3] = 1.0
-    F[3,4] = 0.1
+    F[3,4] = dt
 
     F[4,4] = 1.0
 
     F[5,5] = 1.0
 
     F[6,6] = 1.0
-    F[6,7] = 0.1
+    F[6,7] = dt
 
     F[7,7] = 1.0
 
     F[8,8] = 1.0
     
-    predict = F * state
+    
+    
     obj['F'] = F
-    obj['prediction'] = predict.tolist()
+    obj['prediction'] = np.array([xt + math.cos(tt) * (vt * dt + 0.5 * at * dt * dt) - math.sin(tt) * 0.5 * vt * wt * dt * dt -ve * dt - 0.5 * ae * dt * dt,
+                                  yt + math.sin(tt) * (vt * dt + 0.5 * at * dt * dt) + math.cos(tt) * 0.5 * vt * wt * dt * dt -0.5 * ve * we * dt * dt,
+                                  tt + wt * dt - we * dt,
+                                  vt + at * dt,
+                                  at,
+                                  wt,
+                                  ve + ae * dt,
+                                  ae,
+                                  we])
 
     return obj
 
-def calculate_score(A, B):
-    return ((A['prediction'][0]-B['x'])**2 + (A['prediction'][1]-B['y'])**2) / max(A['prediction'][3], 1.0) / max(B['v'], 1.0)
+def calculate_score(A, B, v):
+    dt = 0.1
+    return ((A['prediction'][0]-B['x'])**2 + (A['prediction'][1]-B['y'])**2) / v / v
 
 def kalman_update(cur_objects_list, observed_data, ego, hash_id):
     A = len(cur_objects_list)
     B = len(observed_data)
+    cur_vel = ego['v']
     
     arr = []
     for a in range(A):
         cur_objects_list[a] = predict(cur_objects_list[a])
     for a in range(A):
         for b in range(B):
-            arr.append({'score':calculate_score(cur_objects_list[a], observed_data[b]), 'id': [a,b]})
+            arr.append({'score':calculate_score(cur_objects_list[a], observed_data[b], cur_vel), 'id': [a,b]})
 
-    sorted(arr, key=operator.itemgetter('value'))
+    arr = sorted(arr, key=operator.itemgetter('score'))
+
     
     rt = []
     visitA = [False for i in range(A)]
@@ -314,17 +378,20 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj = cur_objects_list[a]
         obv = observed_data[b]
         F = obj['F']
-        P = np.array(obj['P'])
+        P = obj['P']
         r = obj['reliability']
-        P = F * P * np.transpose(F) + Q / r
-        z = [obv['x'], obv['y'], obv['theta'], ego['v'], ego['ax'], ego['omega']]
-        y = z - H * np.array(obj['prediction'])
-        S = H * P * np.transpose(H) + R / r
-        K = P * np.transpose(H) * np.linalg.inv(S)
-        state =  np.array(obj['prediction']) + K * y
-        obj['P'] = ((np.eye(9) - K * H) * P).tolist()
-        obj['age'] = obj['age'] + 1
+        P = F.dot(P).dot(np.transpose(F)) + Q/r
+        z = np.array([obv['x'], obv['y'], obv['theta'], ego['v'], ego['ax'], ego['omega']])
         
+        y = z - H.dot(obj['prediction'])
+        S = H .dot(P).dot(np.transpose(H)) + R/r
+        K = P.dot(np.transpose(H)).dot(np.linalg.inv(S))
+        state =  obj['prediction'] + K.dot(y)
+        obj['state'] = state
+        obj['P'] = (np.eye(9) - K.dot(H)).dot(P)
+        obj['age'] = obj['age'] + 1
+        obj['reliability'] = min(obj['reliability'] + 1, MAX_RELIABILITY)
+        rt.append(obj)
         
 
     for a in range(A):
@@ -339,7 +406,6 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['id'] = tar['id']
         obj['reliability'] = tar['reliability'] - 1
         obj['P'] = tar['P']
-        obj['dt'] = tar['dt'] + 0.1
         rt.append(obj)
 
     for b in range(B):
@@ -347,29 +413,34 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
             continue
         tar = observed_data[b]
         obj = {}
-        obj['state'] = [tar['x'], 
-                        tar['y'], 
-                        tar['theta'], 
-                        ego['v'] + np.random.normal(0.0, 5.0), 
-                        ego['ax'] + np.random.normal(0.0, 1.0),
-                        ego['omega'] + np.random.normal(0.0, 0.01),
-                        ego['v'],
-                        ego['ax'],
-                        ego['omega']]
+        obj['state'] = np.array([tar['x'], 
+                                 tar['y'], 
+                                 tar['theta'], 
+                                 ego['v'] + np.random.normal(0.0, 5.0), 
+                                 np.random.normal(0.0, 0.04),
+                                 0.0,
+                                 ego['v'],
+                                 ego['ax'],
+                                 ego['omega']])
         obj['reliability'] = 1
         obj['age'] = 1
         obj['id'] = hash_id
         obj['P'] = P_init
-        obj['dt'] = 0.1
         hash_id += 1
+        print(hash_id)
         rt.append(obj)
 
+    return rt, hash_id
 
-for data_index in range(0,99):
+
+for data_index in range(0,96):
+    if data_index != 1 :
+        continue
     data_name = data_name_list[data_index]
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
-    state_path = data_path + "state/"
+    state_path = data_path + "new_state/"
     save_path = data_path + "result/"
+    hash_id = 0
 
     st = seq_list[data_index][0]
     en = seq_list[data_index][1]
@@ -396,14 +467,29 @@ for data_index in range(0,99):
     # F: hat(xt) = Fxt + Qt, F is jacobian matrix (EKF)
     # reliability(r):(1~5) Qt = Q/r, Rt = R/r
     # age
-    # id
+    # id-
     hash_id = 0
     
     for seq in range(0, N):
         save_seq = st + seq + 1
-        
         cur_objects_list, hash_id = kalman_update(cur_objects_list, observed_data[seq], ego_data[seq], hash_id)
         
+        save_objects = []
+        for obj in cur_objects_list:
+            save_objects.append({'x': obj['state'][0],
+                                 'y': obj['state'][1],
+                                 'theta': obj['state'][2],
+                                 'v': obj['state'][3],
+                                 'ax': obj['state'][4],
+                                 'omega': obj['state'][5],
+                                 'age': obj['age'],
+                                 'reliability': obj['reliability'],
+                                 'id': obj['id']})
+        state_file = state_path + str(save_seq).zfill(6)+".json"
+        with open(state_file, "r") as st_json:
+            state = json.load(st_json)
+        state['filtered_objects'] = save_objects
+
+        with open(state_file, 'w') as outfile:
+            json.dump(state, outfile, indent=4)
         
-        
-        save_object_info(object_list, save_seq)

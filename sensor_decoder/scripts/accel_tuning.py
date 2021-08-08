@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os
 import rospy
 import rospkg
@@ -30,7 +31,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_gunmin_28_1'
                 ,'0729_neg_gunmin_28_2'
                 ,'0729_neg_gunmin_29_1'
-                ,'0729_neg_gunmin_29_2'
                 ,'0729_neg_gunmin_30_1'
                 ,'0729_neg_gunmin_30_2'
                 ,'0729_neg_gunmin_31_1'
@@ -95,7 +95,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_30_2'
                 ,'0729_neg_wooseok_31_1'
                 ,'0729_neg_wooseok_31_2'
-                ,'0729_neg_wooseok_34_1'
                 ,'0729_neg_wooseok_34_2'
                 ,'0729_neg_wooseok_35_1'
                 ,'0729_neg_wooseok_35_2'
@@ -105,17 +104,16 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_37_2'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
-                ,'0729_neg_wooseok_48'
                 ,'0729_neg_wooseok_50_1'
                 ,'0729_neg_wooseok_50_2']
 
 seq_list = [(50,2450),
             (6000,9000),
-            (4000,7000),
+            (5000,8000),
             (0,2200),
             (150,2550),
             (500,3500),
-            (5000,8000),
+            (6000,9000),
             (50,1450),
             (40,140),
             (0,140),
@@ -130,15 +128,14 @@ seq_list = [(50,2450),
             (200,220),
             (120,140),
             (120,140),
-            (110,140),
             (130,160),
             (180,200),
             (160,180),
             (145,165),
-            (110,130),
-            (80,110),
-            (120,150),
-            (170,200),
+            (120,140),
+            (90,110),
+            (140,160),
+            (180,200),
             (120,140),
             (180,200),
             (80,100),
@@ -174,7 +171,7 @@ seq_list = [(50,2450),
             (155,175),
             (120,140),
             (190,210),
-            (140,170),
+            (140,160),
             (110,130),
             (130,150),
             (80,250),
@@ -195,7 +192,6 @@ seq_list = [(50,2450),
             (90,110),
             (70,90),
             (110,130),
-            (120,140),
             (130,150),
             (90,110),
             (90,110),
@@ -205,15 +201,16 @@ seq_list = [(50,2450),
             (110,140),
             (170,190),
             (160,190),
-            (130,150),
             (30,130),
             (170,220)]
+
 
 ax_o = []
 ax_e = []
 ay_o = []
 ay_e = []
-for data_index in range(0,99): 
+om = []
+for data_index in range(0,96): 
     data_name = data_name_list[data_index]
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
     state_path = data_path + "state/"
@@ -231,9 +228,12 @@ for data_index in range(0,99):
         ego_data.append({'ax':state['ax'],
                          'ay':state['ay'],
                          'omega':state['omega'],
-                         'v':state['v']})
+                         'v':state['v'],
+                         'decision':state['decision']})
 
     for i in range(0, N-1):
+        if ego_data[i]['decision'] == 4:
+            om.append(ego_data[i]['omega'])
         ay_o.append(ego_data[i]['ay'])
         ay_e.append(ego_data[i]['v'] * ego_data[i]['omega'])
         c = (ego_data[i+1]['v']-ego_data[i]['v']) / 0.1
@@ -243,6 +243,7 @@ for data_index in range(0,99):
         ax_e.append(c)
 
 
+print(sum(om)/len(om))
 linear_fitting = LinearRegression()
 linear_fitting.fit(np.array(ay_o).reshape(-1,1), np.array(ay_e))
 print(linear_fitting.coef_)
@@ -251,7 +252,7 @@ linear_fitting = LinearRegression()
 linear_fitting.fit(np.array(ax_o).reshape(-1,1), np.array(ax_e))
 print(linear_fitting.coef_)
 print(linear_fitting.intercept_)
-plt.scatter(ax_o, ax_e, marker='o')
+plt.scatter(ay_o, ay_e, marker='o')
 plt.xlim((-1.0, 1.0))
 plt.ylim(-5.0, 5.0)
 plt.show()

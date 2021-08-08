@@ -235,6 +235,7 @@ class ObjectQuery:
         print("3: test query(don't do this query")
         print("4: init theta query")
         print("5: l,w query")
+        print("6: fast valid query")
         self.query_type = input()
         if self.query_type == 1:
             self.query()
