@@ -36,7 +36,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_gunmin_28_1'
                 ,'0729_neg_gunmin_28_2'
                 ,'0729_neg_gunmin_29_1'
-                ,'0729_neg_gunmin_29_2'
                 ,'0729_neg_gunmin_30_1'
                 ,'0729_neg_gunmin_30_2'
                 ,'0729_neg_gunmin_31_1'
@@ -101,7 +100,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_30_2'
                 ,'0729_neg_wooseok_31_1'
                 ,'0729_neg_wooseok_31_2'
-                ,'0729_neg_wooseok_34_1'
                 ,'0729_neg_wooseok_34_2'
                 ,'0729_neg_wooseok_35_1'
                 ,'0729_neg_wooseok_35_2'
@@ -111,7 +109,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_37_2'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
-                ,'0729_neg_wooseok_48'
                 ,'0729_neg_wooseok_50_1'
                 ,'0729_neg_wooseok_50_2']
 
@@ -121,7 +118,7 @@ seq_list = [(50,2450),
             (0,2200),
             (150,2550),
             (500,3500),
-            (5000,8000),
+            (6000,9000),
             (50,1450),
             (40,140),
             (0,140),
@@ -136,15 +133,14 @@ seq_list = [(50,2450),
             (200,220),
             (120,140),
             (120,140),
-            (110,140),
             (130,160),
             (180,200),
             (160,180),
             (145,165),
-            (110,130),
-            (80,110),
-            (120,150),
-            (170,200),
+            (120,140),
+            (90,110),
+            (140,160),
+            (180,200),
             (120,140),
             (180,200),
             (80,100),
@@ -180,7 +176,7 @@ seq_list = [(50,2450),
             (155,175),
             (120,140),
             (190,210),
-            (140,170),
+            (140,160),
             (110,130),
             (130,150),
             (80,250),
@@ -201,7 +197,6 @@ seq_list = [(50,2450),
             (90,110),
             (70,90),
             (110,130),
-            (120,140),
             (130,150),
             (90,110),
             (90,110),
@@ -211,7 +206,6 @@ seq_list = [(50,2450),
             (110,140),
             (170,190),
             (160,190),
-            (130,150),
             (30,130),
             (170,220)]
 
@@ -339,7 +333,7 @@ class ObjectQuery:
     def query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,96):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -415,14 +409,14 @@ class ObjectQuery:
     def object_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,96):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
         self.data_name_index = input()
         self.data_name = data_name_list[self.data_name_index]
         self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
-        self.state_path = self.data_path + "state/"
+        self.state_path = self.data_path + "new_state/"
         st = seq_list[self.data_name_index][0]
         en = seq_list[self.data_name_index][1]
         N = en - st
@@ -521,7 +515,7 @@ class ObjectQuery:
     def test_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,96):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -627,7 +621,7 @@ class ObjectQuery:
     def theta_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,96):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -701,7 +695,7 @@ class ObjectQuery:
     def bus_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,96):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")

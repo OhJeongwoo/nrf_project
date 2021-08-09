@@ -7,9 +7,9 @@ import json
 import math
 import time
 
-data_name = "0729_exp_gunmin_highway"
+data_name = "0729_neg_jeongwoo_03_1"
 data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
-state_path = data_path + "state/"
+state_path = data_path + "new_state/"
 bin_path = data_path + "bin/"
 bev_path = data_path + "bev_map/"
 local_map_path = data_path + "local_map/"
@@ -17,7 +17,7 @@ local_map_path = data_path + "local_map/"
 valid_path = data_path + "valid.txt"
 
 seq_list = []
-for i in range(1, 2000):
+for i in range(1,101):
     seq_list.append(i)
 # f = open(valid_path, 'r')
 # while True:
@@ -53,7 +53,7 @@ For local map
 n_marked_lane = 200
 v_clip = 20.0
 ax_clip = 5.0
-ay_clip = 1.0
+ay_clip = 5.0
 w_clip = 0.5
 dev_clip = 4.0
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -114,8 +114,9 @@ def draw_object(image, objects):
         cv2.line(image, (box[0][1], box[0][0]), (box[1][1], box[1][0]), (0, 0, 255), 3)
         cv2.line(image, (box[1][1], box[1][0]), (box[2][1], box[2][0]), (0, 0, 255), 3)
         cv2.line(image, (box[2][1], box[2][0]), (box[3][1], box[3][0]), (0, 0, 255), 3)
-        cv2.line(image, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (0, 0, 255), 3)
-        cv2.putText(image, format(i,"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
+        cv2.line(image, (box[3][1], box[3][0]), (box[0][1], box[0][0]), (0, 255, 255), 3)
+        cv2.putText(image, format(objects[i]['id'],"d"), (box[4][1], box[4][0]), font, fontscale, (255, 255, 255), fontthickness, fontline)
+        cv2.putText(image, str(objects[i]['v']), (box[4][1], box[4][0]+20), font, fontscale, (255, 255, 255), fontthickness, fontline)
     
 
 init_time = time.time()
@@ -207,9 +208,12 @@ for seq in seq_list:
     local_map = np.transpose(np.vstack((intensity_layer, density_layer, height_layer)), (1,2,0))
     local_map = cv2.resize(local_map, (bev_height, bev_width))
 
+    # ours
+    cv2.rectangle(local_map, (290, 400), (310, 445), (0, 255, 0), 2)
+
     draw_lanes(local_map, state['lanes'])
 
-    draw_object(local_map, state['objects'])
+    draw_object(local_map, state['filtered_objects'])
 
     # draw heading indicator
     cv2.circle(local_map, (100, 100), 50, (255,255,255), 2)

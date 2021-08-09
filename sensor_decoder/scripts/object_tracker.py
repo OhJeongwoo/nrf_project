@@ -406,6 +406,8 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['id'] = tar['id']
         obj['reliability'] = tar['reliability'] - 1
         obj['P'] = tar['P']
+        obj['l'] = tar['l']
+        obj['w'] = tar['w']
         rt.append(obj)
 
     for b in range(B):
@@ -416,7 +418,8 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['state'] = np.array([tar['x'], 
                                  tar['y'], 
                                  tar['theta'], 
-                                 ego['v'] + np.random.normal(0.0, 5.0), 
+                                #  ego['v'] + np.random.normal(0.0, 5.0), 
+                                 ego['v'],
                                  np.random.normal(0.0, 0.04),
                                  0.0,
                                  ego['v'],
@@ -426,6 +429,8 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['age'] = 1
         obj['id'] = hash_id
         obj['P'] = P_init
+        obj['l'] = tar['l']
+        obj['w'] = tar['w']
         hash_id += 1
         print(hash_id)
         rt.append(obj)
@@ -434,7 +439,7 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
 
 
 for data_index in range(0,96):
-    if data_index != 1 :
+    if data_index != 43 :
         continue
     data_name = data_name_list[data_index]
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
@@ -484,7 +489,9 @@ for data_index in range(0,96):
                                  'omega': obj['state'][5],
                                  'age': obj['age'],
                                  'reliability': obj['reliability'],
-                                 'id': obj['id']})
+                                 'id': obj['id'],
+                                 'l': obj['l'],
+                                 'w': obj['w']})
         state_file = state_path + str(save_seq).zfill(6)+".json"
         with open(state_file, "r") as st_json:
             state = json.load(st_json)
