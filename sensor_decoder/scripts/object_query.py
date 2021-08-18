@@ -217,12 +217,6 @@ seq_list = [(50,2450),
 
 class ObjectQuery:
     def __init__(self):
-        self.data_name = "0729_exp_gunmin_highway"
-        self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
-        self.state_path = self.data_path + "state/"
-
-        self.seq = 200
-        self.mode = 0
         # 0 : normal
         # 1 : insert mode
         # 2 : delete mode
@@ -234,7 +228,7 @@ class ObjectQuery:
         print("2: object query")
         print("3: test query(don't do this query")
         print("4: init theta query")
-        print("5: l,w query")
+        print("5: l query")
         self.query_type = input()
         if self.query_type == 1:
             self.query()
@@ -245,7 +239,7 @@ class ObjectQuery:
         elif self.query_type == 4 :
             self.theta_query()
         elif self.query_type == 5 :
-            self.bus_query()
+            self.l_query()
         print("PRESS CTRL + C")
 
     def print_query(self):
@@ -327,8 +321,8 @@ class ObjectQuery:
             obj.l = objects[i]['l']
             obj.w = objects[i]['w']
             obj.valid = objects[i]['valid']
-            # obj.id = i
-            obj.id = objects[i]['id']
+            obj.id = i
+            # obj.id = objects[i]['id']
             obj_list.append(obj)
 
         rt.objects = obj_list
@@ -421,7 +415,7 @@ class ObjectQuery:
         self.data_name_index = input()
         self.data_name = data_name_list[self.data_name_index]
         self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
-        self.state_path = self.data_path + "state/"
+        self.state_path = self.data_path + "new_state/"
         st = seq_list[self.data_name_index][0]
         en = seq_list[self.data_name_index][1]
         N = en - st
@@ -493,6 +487,10 @@ class ObjectQuery:
                 break
             else :
                 x = int(x)
+                for id in range(len(self.state['objects'])):
+                    if self.state['objects'][id]['id'] == x:
+                        break
+                x = id
                 obj = self.state['objects'][x]
                 print("obj info : x y theta l w")
                 print("%.2f %.2f %.2f %.2f %.2f" %(obj['x'], obj['y'], obj['theta']/math.pi*180, obj['l'], obj['w']))
@@ -696,8 +694,8 @@ class ObjectQuery:
                     json.dump(state, outfile, indent=4)
 
                 self.theta -= state['omega'] * 0.1
-        
-    def bus_query(self):
+
+    def l_query(self):
         print("DATA NAME LIST")
         print("========================================")
         for i in range(0,99):
@@ -732,45 +730,54 @@ class ObjectQuery:
         print("========================================")
         start = input()
         for id in range(start,M):
+            print(id)
             self.id = id
+            check = False
             for seq in range(st+1, en+1):
                 current_new_state_path = self.state_path+str(seq).zfill(6)+".json"
                 with open(current_new_state_path, "r") as st_json:
                     state = json.load(st_json)
-                check = False
                 for obj in state['objects']:
-                    if obj['id'] == self.id:
+                    if obj['id'] == self.id and obj['x'] > 10.0:
                         self.seq = seq
-                        self.theta = obj['theta']
+                        self.l = obj['l']
                         check = True
+                        print("success")
                         break
                 if check :
                     break
+            if not check :
+                print("fail")
+                continue
             self.load_state()
+            print(self.seq)
             while True :
-                print("input theta, if input 1000, break")
-                x = int(input())
-                if x == 1000:
+                print("input theta, if input x, break")
+                x = raw_input()
+                if x == 'x':
                     break
-                self.theta = self.theta + x / 180.0 * math.pi
+                x = float(x)
+                self.l = x
+                print(len(self.state['objects']))
                 for i in range(len(self.state['objects'])):
+                    print(self.state['objects'][i]['id'])
                     if self.state['objects'][i]['id'] == self.id:
                         print(self.id)
                         print(self.state['objects'][i]['id'])
-                        self.state['objects'][i]['theta'] = self.theta
+                        self.state['objects'][i]['l'] = self.l
                 self.pub_object(self.state['objects'])
-            for seq in range(self.seq, en+1):
+            for seq in range(st+1, en+1):
                 cur_file = self.state_path+str(seq).zfill(6)+".json"
                 with open(cur_file, "r") as st_json:
                     state = json.load(st_json)
                 for i in range(len(state['objects'])):
                     if state['objects'][i]['id'] == self.id:
-                        state['objects'][i]['theta'] = self.theta + np.random.normal(0, 0.01)
+                        state['objects'][i]['l'] = self.l + np.random.normal(0, 0.5)
                 with open(cur_file, 'w') as outfile:
                     json.dump(state, outfile, indent=4)
 
-                self.theta -= state['omega'] * 0.1
-
+                
+    
 
         
 

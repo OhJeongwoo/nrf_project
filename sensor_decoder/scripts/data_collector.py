@@ -68,7 +68,7 @@ class DataCollector:
         self.email = "jeongwoo.oh@rllab.snu.ac.kr"
         self.copy_right = "RLLAB@SNU"
         self.date = datetime.datetime.now().strftime("%Y-%m-%d")
-        self.data_name = "0729_exp_sumin_highway"
+        self.data_name = "0815_exp_jeongwoo_highway_1"
         self.data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + self.data_name + "/"
         # self.data_path = "/media/jeongwoooh/Samsung USB/data/" + self.data_name + "/"
 

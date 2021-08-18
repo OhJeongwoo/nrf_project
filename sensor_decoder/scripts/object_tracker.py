@@ -366,6 +366,8 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
 
 
 for data_index in range(0,99):
+    if data_index != 1:
+        continue
     data_name = data_name_list[data_index]
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
     state_path = data_path + "state/"
@@ -404,6 +406,19 @@ for data_index in range(0,99):
         
         cur_objects_list, hash_id = kalman_update(cur_objects_list, observed_data[seq], ego_data[seq], hash_id)
         
+        save_objects = []
+        for obj in cur_objects_list:
+            save_objects.append({'x': obj['x'],
+                                 'y': obj['y'],
+                                 'theta': obj['theta'],
+                                 'v': obj['v'],
+                                 'ax': obj['ax'],
+                                 'omega': obj['omega'],
+                                 'reliability':obj['reliability'],
+                                 'age': obj['age'],
+                                 'id': obj['id']})
+        state_file = state_path + str(save_seq).zfill(6)+".json"
+        with open(state_file, "r") as st_json:
+            state = json.load(st_json)
+        state['filtered_objects'] = save_objects
         
-        
-        save_object_info(object_list, save_seq)

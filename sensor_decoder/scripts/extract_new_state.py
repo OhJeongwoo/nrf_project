@@ -215,7 +215,7 @@ seq_list = [(50,2450),
 if __name__=='__main__':
     rospy.init_node("extract_new_state", anonymous=True)
     for data_index in range(0,99):
-        if data_index != 2:
+        if data_index != 1:
             continue
         data_name = data_name_list[data_index]
         data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
