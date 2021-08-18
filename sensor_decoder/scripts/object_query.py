@@ -36,7 +36,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_gunmin_28_1'
                 ,'0729_neg_gunmin_28_2'
                 ,'0729_neg_gunmin_29_1'
-                ,'0729_neg_gunmin_29_2'
                 ,'0729_neg_gunmin_30_1'
                 ,'0729_neg_gunmin_30_2'
                 ,'0729_neg_gunmin_31_1'
@@ -101,7 +100,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_30_2'
                 ,'0729_neg_wooseok_31_1'
                 ,'0729_neg_wooseok_31_2'
-                ,'0729_neg_wooseok_34_1'
                 ,'0729_neg_wooseok_34_2'
                 ,'0729_neg_wooseok_35_1'
                 ,'0729_neg_wooseok_35_2'
@@ -111,9 +109,13 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_37_2'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
-                ,'0729_neg_wooseok_48'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2']
+                ,'0729_neg_wooseok_50_2'
+                ,'0813_exp_jeongwoo_road_1'
+                ,'0813_exp_jeongwoo_road_2'
+                ,'0815_exp_jeongwoo_highway_1'
+                ,'0815_exp_jeongwoo_highway_2']
+
 
 seq_list = [(50,2450),
             (6000,9000),
@@ -121,7 +123,7 @@ seq_list = [(50,2450),
             (0,2200),
             (150,2550),
             (500,3500),
-            (5000,8000),
+            (6000,9000),
             (50,1450),
             (40,140),
             (0,140),
@@ -136,15 +138,14 @@ seq_list = [(50,2450),
             (200,220),
             (120,140),
             (120,140),
-            (110,140),
             (130,160),
             (180,200),
             (160,180),
             (145,165),
-            (110,130),
-            (80,110),
-            (120,150),
-            (170,200),
+            (120,140),
+            (90,110),
+            (140,160),
+            (180,200),
             (120,140),
             (180,200),
             (80,100),
@@ -180,7 +181,7 @@ seq_list = [(50,2450),
             (155,175),
             (120,140),
             (190,210),
-            (140,170),
+            (140,160),
             (110,130),
             (130,150),
             (80,250),
@@ -201,7 +202,6 @@ seq_list = [(50,2450),
             (90,110),
             (70,90),
             (110,130),
-            (120,140),
             (130,150),
             (90,110),
             (90,110),
@@ -211,9 +211,13 @@ seq_list = [(50,2450),
             (110,140),
             (170,190),
             (160,190),
-            (130,150),
             (30,130),
-            (170,220)]
+            (170,220),
+            (1400,4400),
+            (14000,17000),
+            (1400,4400),
+            (5500,8500)]
+
 
 class ObjectQuery:
     def __init__(self):
@@ -228,7 +232,8 @@ class ObjectQuery:
         print("2: object query")
         print("3: test query(don't do this query")
         print("4: init theta query")
-        print("5: l query")
+        print("5: l,w query")
+        print("6: fast valid query")
         self.query_type = input()
         if self.query_type == 1:
             self.query()
@@ -332,7 +337,7 @@ class ObjectQuery:
     def query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,100):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -408,7 +413,7 @@ class ObjectQuery:
     def object_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,100):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -448,6 +453,7 @@ class ObjectQuery:
         while(1):
             self.print_object_query()
             x = raw_input("input query :")
+            
             if x == 'a':
                 self.save_state()
                 self.seq -= 1
@@ -487,10 +493,10 @@ class ObjectQuery:
                 break
             else :
                 x = int(x)
-                for id in range(len(self.state['objects'])):
-                    if self.state['objects'][id]['id'] == x:
+                for i in range(len(self.state['objects'])):
+                    if self.state['objects'][i]['id'] ==x:
+                        x = i
                         break
-                x = id
                 obj = self.state['objects'][x]
                 print("obj info : x y theta l w")
                 print("%.2f %.2f %.2f %.2f %.2f" %(obj['x'], obj['y'], obj['theta']/math.pi*180, obj['l'], obj['w']))
@@ -518,7 +524,7 @@ class ObjectQuery:
     def test_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,100):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -624,7 +630,7 @@ class ObjectQuery:
     def theta_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,100):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -698,7 +704,7 @@ class ObjectQuery:
     def l_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,99):
+        for i in range(0,100):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")

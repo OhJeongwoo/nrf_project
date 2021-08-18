@@ -1,17 +1,11 @@
+#!/usr/bin/python
+from math import exp
+import os
 import rospy
 import rospkg
-
-import numpy as np
-import cv2
+import shutil
 import json
-import math
-import time
 
-
-
-# start_data = 1
-# end_data = 5001
-# invalid = (8933, 9409)
 
 data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_exp_gunmin_highway'
@@ -108,12 +102,7 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2'
-                ,'0813_exp_jeongwoo_road_1'
-                ,'0813_exp_jeongwoo_road_2'
-                ,'0815_exp_jeongwoo_highway_1'
-                ,'0815_exp_jeongwoo_highway_2']
-
+                ,'0729_neg_wooseok_50_2']
 
 seq_list = [(50,2450),
             (6000,9000),
@@ -210,92 +199,107 @@ seq_list = [(50,2450),
             (170,190),
             (160,190),
             (30,130),
-            (170,220),
-            (1400,4400),
-            (14000,17000),
-            (1400,4400),
-            (5500,8500)]
+            (170,220)]
 
-prev_state = None
-prev_theta = 0.0
+def make_dir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-N = len(data_name_list)
+dataset_path = rospkg.RosPack().get_path("sensor_decoder") + "/mixquality/"
+make_dir(dataset_path)
 
-start = time.time()
-end = time.time()
+exp_path = dataset_path + "exp/"
+neg_path = dataset_path + "neg/"
+make_dir(exp_path)
+make_dir(neg_path)
 
-for i, data_name in enumerate(data_name_list):
-    if data_name[1] == '7':
+dev = 0.0
+
+
+for data_index in range(0,96):
+    if data_index != 2:
         continue
-    if i < 96:
+    data_name = data_name_list[data_index]
+    if data_name[5:8] == 'exp':
+        data_path = exp_path + data_name + "/"
+    elif data_name[5:8] == 'neg':
+        data_path = neg_path + data_name + "/"
+    else:
+        print("wrong data name %s" %(data_name))
         continue
-    print("[%d / %d, %.2f] Start to state post-processing, data name is %s" %(i+1, N, end - start, data_name))
-    data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
+    make_dir(data_path)
+    src_data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
+    src_state_path = src_data_path + "new_state/"
+    src_bin_path = src_data_path + "bin/"
+    src_img_path = src_data_path + "image_raw/"
+    src_map_path = src_data_path + "local_map/"
+
+
     state_path = data_path + "state/"
+    bin_path = data_path + "bin/"
+    img_path = data_path + "image_raw/"
+    map_path = data_path + "local_map/"
 
-    st = seq_list[i][0]
-    en = seq_list[i][1]
-    M = en - st
+    make_dir(state_path)
+    make_dir(bin_path)
+    make_dir(img_path)
+    make_dir(map_path)
 
-    for j in range(1, M+1):
-        seq = j + st
-        state_file = state_path + str(seq).zfill(6) + ".json"
-        with open(state_file, "r") as st_json:
+    st = seq_list[data_index][0]
+    en = seq_list[data_index][1]
+
+    print("START TO GENERATE DATASET %s" %(data_name))
+    for seq in range(st+1, en+1):
+        file_name = str(seq).zfill(6)
+        src_state_file = src_state_path + file_name + ".json"
+        src_bin_file = src_bin_path + file_name + ".bin"
+        src_img_file = src_img_path + file_name + ".png"
+        src_map_file = src_map_path + file_name + ".png"
+
+        dst_state_file = state_path + file_name + ".json"
+        dst_bin_file = bin_path + file_name + ".bin"
+        dst_img_file = img_path + file_name + ".png"
+        dst_map_file = map_path + file_name + ".png"
+
+        shutil.copy(src_bin_file, dst_bin_file)
+        shutil.copy(src_img_file, dst_img_file)
+        shutil.copy(src_map_file, dst_map_file)
+
+        with open(src_state_file, "r") as st_json:
             state = json.load(st_json)
+        
+        save_state = {}
+        if 'target_deviation' not in state:
+            print(data_name)
+            print(seq)
+        save_state['date'] = state['date']
+        save_state['data_name'] = state['data_name']
+        save_state['author'] = state['author']
+        save_state['email'] = state['email']
+        save_state['copy_right'] = state['copy_right']
+        save_state['x'] = state['x']
+        save_state['y'] = state['y']
+        save_state['theta'] = state['theta']
+        save_state['v'] = state['v']
+        save_state['ax'] = state['ax']
+        save_state['ay'] = state['ay']
+        save_state['omega'] = state['omega']
+        if 'target_deviation' not in state:
+            save_state['deviation'] = dev
+        else:
+            save_state['deviation'] = state['target_deviation']
+            dev = save_state['deviation']
+        save_state['decision'] = state['decision']
+        if 'is_tunnel' not in state:
+            save_state['is_tunnel'] = False
+        else :    
+            save_state['is_tunnel'] = state['is_tunnel']
+        save_state['lanes'] = state['lanes']
+        save_state['objects'] = state['filtered_objects']
 
-        state['data_name'] = data_name
-
-        # add lateral deviation
-        dev_list = []
-        for lane in state['lanes']:
-            dev_list.append(lane['c0'])
-        dev_list = sorted(dev_list, key = abs)
-        state['target_deviation'] = (dev_list[0] + dev_list[1]) / 2.0
-
-        # revise decision
-        # if v is small, decision turns into stop(4), and theta still keeps previous value
-        # if v is not small but decision is stop(4), decision turns into keep lane(1)
-        if state['v'] < 1.0:
-            state['decision'] = 4
-            state['theta'] = prev_theta
-        else :
-            if state['decision'] == 4:
-                state['decision'] = 1
-            prev_theta = state['theta']
-
-        # add tunnel attributes
-        # if v is not small and location doesn't change, is_tunnel is true
-        if prev_state is None:
-            state['is_tunnel'] = False
-        else :
-            distance = math.sqrt((prev_state['x'] - state['x']) ** 2 + (prev_state['y'] - state['y']) ** 2)
-            if state['v'] > 5.0 and distance < 1e-7:
-                state['is_tunnel'] = True
-                # print("[WARN] %d-th seq is in a tunnel" %(seq))
-            else :
-                state['is_tunnel'] = False
-
-
-        with open(state_file, 'w') as outfile:
-                json.dump(state, outfile, indent=4)
-
-        prev_state = state
-
-        end = time.time()
-        if j % 1000 == 0:
-            print("[%d / %d, %.2f] In progress to state post-processing" %(j, M, end-start))
+        with open(dst_state_file, 'w') as outfile:
+                json.dump(save_state, outfile, indent=4)
+        
+        if (seq - st) % 100 == 0:
+            print("[CUR %d / %d]" %(seq - st, en - st))
     
-
-
-# for seq in range(start_data, end_data):
-#     print(seq)
-#     # if seq in range(invalid[0], invalid[1]):
-#     #     continue
-#     with open(state_path+str(seq).zfill(6)+".json", "r") as st_json:
-#         state = json.load(st_json)
-
-    
-    
-    
-
-
