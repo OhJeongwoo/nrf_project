@@ -449,6 +449,7 @@ class ObjectQuery:
         while(1):
             self.print_object_query()
             x = raw_input("input query :")
+            
             if x == 'a':
                 self.save_state()
                 self.seq -= 1
@@ -488,6 +489,10 @@ class ObjectQuery:
                 break
             else :
                 x = int(x)
+                for i in range(len(self.state['objects'])):
+                    if self.state['objects'][i]['id'] ==x:
+                        x = i
+                        break
                 obj = self.state['objects'][x]
                 print("obj info : x y theta l w")
                 print("%.2f %.2f %.2f %.2f %.2f" %(obj['x'], obj['y'], obj['theta']/math.pi*180, obj['l'], obj['w']))

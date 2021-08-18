@@ -1,15 +1,10 @@
 #!/usr/bin/python
+from math import exp
+import os
 import rospy
 import rospkg
-import time
-import math
+import shutil
 import json
-import os
-
-from std_msgs.msg import Int32MultiArray
-from sensor_decoder.msg import Data
-from sensor_decoder.msg import Object
-from sensor_decoder.msg import Label
 
 
 data_name_list = ['0729_exp_gunmin_FMTC'
@@ -206,49 +201,105 @@ seq_list = [(50,2450),
             (30,130),
             (170,220)]
 
-if __name__=='__main__':
-    rospy.init_node("extract_new_state", anonymous=True)
-    for data_index in range(0,96):
-        if data_index != 6:
-            continue
-        data_name = data_name_list[data_index]
-        data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
-        state_path = data_path + "state/"
-        new_state_path = data_path + "new_state/"
+def make_dir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-        print(data_name)
+dataset_path = rospkg.RosPack().get_path("sensor_decoder") + "/mixquality/"
+make_dir(dataset_path)
 
-        if not os.path.exists(new_state_path):
-            os.mkdir(new_state_path)
+exp_path = dataset_path + "exp/"
+neg_path = dataset_path + "neg/"
+make_dir(exp_path)
+make_dir(neg_path)
 
-        st = seq_list[data_index][0]
-        en = seq_list[data_index][1]
+dev = 0.0
 
-        N = en - st
 
-        for seq in range(st+1, en+1):
+for data_index in range(0,96):
+    if data_index != 2:
+        continue
+    data_name = data_name_list[data_index]
+    if data_name[5:8] == 'exp':
+        data_path = exp_path + data_name + "/"
+    elif data_name[5:8] == 'neg':
+        data_path = neg_path + data_name + "/"
+    else:
+        print("wrong data name %s" %(data_name))
+        continue
+    make_dir(data_path)
+    src_data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
+    src_state_path = src_data_path + "new_state/"
+    src_bin_path = src_data_path + "bin/"
+    src_img_path = src_data_path + "image_raw/"
+    src_map_path = src_data_path + "local_map/"
+
+
+    state_path = data_path + "state/"
+    bin_path = data_path + "bin/"
+    img_path = data_path + "image_raw/"
+    map_path = data_path + "local_map/"
+
+    make_dir(state_path)
+    make_dir(bin_path)
+    make_dir(img_path)
+    make_dir(map_path)
+
+    st = seq_list[data_index][0]
+    en = seq_list[data_index][1]
+
+    print("START TO GENERATE DATASET %s" %(data_name))
+    for seq in range(st+1, en+1):
+        file_name = str(seq).zfill(6)
+        src_state_file = src_state_path + file_name + ".json"
+        src_bin_file = src_bin_path + file_name + ".bin"
+        src_img_file = src_img_path + file_name + ".png"
+        src_map_file = src_map_path + file_name + ".png"
+
+        dst_state_file = state_path + file_name + ".json"
+        dst_bin_file = bin_path + file_name + ".bin"
+        dst_img_file = img_path + file_name + ".png"
+        dst_map_file = map_path + file_name + ".png"
+
+        shutil.copy(src_bin_file, dst_bin_file)
+        shutil.copy(src_img_file, dst_img_file)
+        shutil.copy(src_map_file, dst_map_file)
+
+        with open(src_state_file, "r") as st_json:
+            state = json.load(st_json)
+        
+        save_state = {}
+        if 'target_deviation' not in state:
+            print(data_name)
             print(seq)
-            current_state_path = state_path+str(seq).zfill(6)+".json"
-            current_new_state_path = new_state_path+str(seq).zfill(6)+".json"
-            with open(current_state_path, "r") as st_json:
-                state = json.load(st_json)
-            
-            new_object = []
+        save_state['date'] = state['date']
+        save_state['data_name'] = state['data_name']
+        save_state['author'] = state['author']
+        save_state['email'] = state['email']
+        save_state['copy_right'] = state['copy_right']
+        save_state['x'] = state['x']
+        save_state['y'] = state['y']
+        save_state['theta'] = state['theta']
+        save_state['v'] = state['v']
+        save_state['ax'] = state['ax']
+        save_state['ay'] = state['ay']
+        save_state['omega'] = state['omega']
+        if 'target_deviation' not in state:
+            save_state['deviation'] = dev
+        else:
+            save_state['deviation'] = state['target_deviation']
+            dev = save_state['deviation']
+        save_state['decision'] = state['decision']
+        if 'is_tunnel' not in state:
+            save_state['is_tunnel'] = False
+        else :    
+            save_state['is_tunnel'] = state['is_tunnel']
+        save_state['lanes'] = state['lanes']
+        save_state['objects'] = state['filtered_objects']
 
-            if 'objects' in state:
-                for obj in state['objects']:
-                    if obj['valid']:
-                        new_object.append(obj)
-            
-            state['objects'] = new_object
-            state['ax'] = state['ax'] * 4.32463114 + -0.12110119526130425
-            state['ay'] = state['ay'] * 4.43318808 + -0.22267699741252442
-            state['omega'] = state['omega'] + 0.00987547714241
-
-            with open(current_new_state_path, 'w') as outfile:
-                json.dump(state, outfile, indent=4)
-            
-
-
-                    
-    rospy.spin()
+        with open(dst_state_file, 'w') as outfile:
+                json.dump(save_state, outfile, indent=4)
+        
+        if (seq - st) % 100 == 0:
+            print("[CUR %d / %d]" %(seq - st, en - st))
+    

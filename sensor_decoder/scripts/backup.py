@@ -26,7 +26,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_gunmin_28_1'
                 ,'0729_neg_gunmin_28_2'
                 ,'0729_neg_gunmin_29_1'
-                ,'0729_neg_gunmin_29_2'
                 ,'0729_neg_gunmin_30_1'
                 ,'0729_neg_gunmin_30_2'
                 ,'0729_neg_gunmin_31_1'
@@ -91,7 +90,6 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_30_2'
                 ,'0729_neg_wooseok_31_1'
                 ,'0729_neg_wooseok_31_2'
-                ,'0729_neg_wooseok_34_1'
                 ,'0729_neg_wooseok_34_2'
                 ,'0729_neg_wooseok_35_1'
                 ,'0729_neg_wooseok_35_2'
@@ -101,17 +99,17 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_37_2'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
-                ,'0729_neg_wooseok_48'
                 ,'0729_neg_wooseok_50_1'
                 ,'0729_neg_wooseok_50_2']
 
 
-for data_index in range(0,99): 
+
+for data_index in range(0,96): 
     data_name = data_name_list[data_index]
     print(data_name)
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
-    state_path = data_path + "state"
-    backup_path = rospkg.RosPack().get_path("sensor_decoder") + "/backup/" + data_name + "/state"
+    state_path = data_path + "new_state"
+    backup_path = rospkg.RosPack().get_path("sensor_decoder") + "/backup/" + data_name + "/new_state"
 
     shutil.copytree(state_path, backup_path)
     

@@ -113,6 +113,7 @@ catkin_install_python(PROGRAMS
   scripts/accel_tuning.py
   scripts/backup.py
   scripts/object_tracker.py
+  scripts/generate_dataset.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

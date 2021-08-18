@@ -1,5 +1,7 @@
 #!/usr/bin/python
 import os
+
+from numpy.linalg.linalg import norm
 import rospy
 import rospkg
 import numpy as np
@@ -203,7 +205,7 @@ seq_list = [(50,2450),
             (30,130),
             (170,220)]
 
-score_threshold = 0.2
+score_threshold = 0.5
 MAX_RELIABILITY = 5
 P_init = np.array([[4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                    [0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -344,9 +346,15 @@ def predict(obj):
 
     return obj
 
+def normalized_theta(x):
+    x = x + math.pi
+    x = x - math.pi * math.floor(x/2/math.pi)
+    x = x - math.pi
+    return x
+
 def calculate_score(A, B, v):
     dt = 0.1
-    return ((A['prediction'][0]-B['x'])**2 + (A['prediction'][1]-B['y'])**2) / v / v
+    return ((A['prediction'][0]-B['x'])**2 + (A['prediction'][1]-B['y'])**2) / max(v,10.0) / max(v,10.0)
 
 def kalman_update(cur_objects_list, observed_data, ego, hash_id):
     A = len(cur_objects_list)
@@ -415,13 +423,17 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
             continue
         tar = observed_data[b]
         obj = {}
+        tar['theta'] = normalized_theta(tar['theta'])
+        if abs(tar['theta']) > 2.5 and ego['v'] < 2.0:
+            v = np.random.normal(max(ego['v'], 10.0), 3.0)
+        else :
+            v = max(ego['v'] + np.random.normal(0.0, 1.0) , 1.0)
         obj['state'] = np.array([tar['x'], 
                                  tar['y'], 
                                  tar['theta'], 
-                                #  ego['v'] + np.random.normal(0.0, 5.0), 
-                                 ego['v'],
+                                 v,
                                  np.random.normal(0.0, 0.04),
-                                 0.0,
+                                 np.random.normal(0.0, 0.01),
                                  ego['v'],
                                  ego['ax'],
                                  ego['omega']])
@@ -437,15 +449,34 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
 
     return rt, hash_id
 
+def single_kalman(obj, ego, obv):
+    obj = predict(obj)
+    F = obj['F']
+    P = obj['P']
+    r = obj['reliability']
+    P = F.dot(P).dot(np.transpose(F)) + Q/r
+    z = np.array([obv['x'], obv['y'], obv['theta'], ego['v'], ego['ax'], ego['omega']])
+    
+    y = z - H.dot(obj['prediction'])
+    S = H .dot(P).dot(np.transpose(H)) + R/r
+    K = P.dot(np.transpose(H)).dot(np.linalg.inv(S))
+    state =  obj['prediction'] + K.dot(y)
+    obj['state'] = state
+    obj['P'] = (np.eye(9) - K.dot(H)).dot(P)
+    obj['age'] = obj['age'] + 1
+    obj['reliability'] = obv['reliability']
+    return obj
+
 
 for data_index in range(0,96):
-    if data_index != 43 :
-        continue
+    # if data_index != 90 :
+    #     continue
     data_name = data_name_list[data_index]
     data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"
     state_path = data_path + "new_state/"
     save_path = data_path + "result/"
     hash_id = 0
+    print(data_name)
 
     st = seq_list[data_index][0]
     en = seq_list[data_index][1]
@@ -472,9 +503,10 @@ for data_index in range(0,96):
     # F: hat(xt) = Fxt + Qt, F is jacobian matrix (EKF)
     # reliability(r):(1~5) Qt = Q/r, Rt = R/r
     # age
-    # id-
+    # id
     hash_id = 0
-    
+    object_lists = [[] for i in range(1000)]
+
     for seq in range(0, N):
         save_seq = st + seq + 1
         cur_objects_list, hash_id = kalman_update(cur_objects_list, observed_data[seq], ego_data[seq], hash_id)
@@ -492,6 +524,19 @@ for data_index in range(0,96):
                                  'id': obj['id'],
                                  'l': obj['l'],
                                  'w': obj['w']})
+            # object_lists[obj['id']].append({'x': obj['state'][0],
+            #                                 'y': obj['state'][1],
+            #                                 'theta': obj['state'][2],
+            #                                 'v': obj['state'][3],
+            #                                 'ax': obj['state'][4],
+            #                                 'omega': obj['state'][5],
+            #                                 'age': obj['age'],
+            #                                 'reliability': obj['reliability'],
+            #                                 'id': obj['id'],
+            #                                 'l': obj['l'],
+            #                                 'w': obj['w'],
+            #                                 'seq': seq})
+
         state_file = state_path + str(save_seq).zfill(6)+".json"
         with open(state_file, "r") as st_json:
             state = json.load(st_json)
@@ -499,4 +544,64 @@ for data_index in range(0,96):
 
         with open(state_file, 'w') as outfile:
             json.dump(state, outfile, indent=4)
+    
+    # save_objects_lists = [[] for i in range(N)]
+    # for obj_id in range(1000):
+    #     if len(object_lists[obj_id]) < 5:
+    #         continue
+    #     start_seq = object_lists[obj_id][0]['seq']
+    #     M = len(object_lists[obj_id])
+    #     init_v = object_lists[obj_id][4]['v'] + np.random.normal(0.0, 0.5)
+    #     init_a = object_lists[obj_id][4]['ax'] + np.random.normal(0.0, 0.1)
+    #     init_w = object_lists[obj_id][4]['w'] + np.random.normal(0.0, 0.01)
+    #     cur_object = {}
+    #     for i in range(M):
+    #         seq = start_seq + i
+    #         if i == 0:
+    #             cur_object['state'] = np.array([object_lists[obj_id][0]['x'],
+    #                                             object_lists[obj_id][0]['y'],
+    #                                             object_lists[obj_id][0]['theta'],
+    #                                             init_v,
+    #                                             init_a,
+    #                                             init_w,
+    #                                             ego_data[seq]['v'],
+    #                                             ego_data[seq]['ax'],
+    #                                             ego_data[seq]['omega']])
+                
+    #             cur_object['reliability'] = object_lists[obj_id][0]['reliability']
+    #             cur_object['age'] = 1
+    #             cur_object['id'] = obj_id
+    #             cur_object['P'] = P_init
+    #             cur_object['l'] = object_lists[obj_id][0]['l']
+    #             cur_object['w'] = object_lists[obj_id][0]['w']
+    #         else:
+    #             cur_object = single_kalman(cur_object, ego_data[seq], object_lists[obj_id][i])
+    #         save_objects_lists[seq].append(cur_object)
+
+    # for seq in range(N):
+    #     save_seq = st + seq + 1
+    #     save_objects = []
+    #     for obj in save_objects_lists[seq]:
+    #         save_objects.append({'x': obj['state'][0],
+    #                              'y': obj['state'][1],
+    #                              'theta': obj['state'][2],
+    #                              'v': obj['state'][3],
+    #                              'ax': obj['state'][4],
+    #                              'omega': obj['state'][5],
+    #                              'age': obj['age'],
+    #                              'reliability': obj['reliability'],
+    #                              'id': obj['id'],
+    #                              'l': obj['l'],
+    #                              'w': obj['w']})
+
+    #     state_file = state_path + str(save_seq).zfill(6)+".json"
+    #     with open(state_file, "r") as st_json:
+    #         state = json.load(st_json)
+    #     state['filtered_objects'] = save_objects
+
+    #     with open(state_file, 'w') as outfile:
+    #         json.dump(state, outfile, indent=4)
+
+
+
         
