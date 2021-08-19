@@ -109,7 +109,12 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2']
+                ,'0729_neg_wooseok_50_2'
+                ,'0813_exp_jeongwoo_road_1'
+                ,'0813_exp_jeongwoo_road_2'
+                ,'0815_exp_jeongwoo_highway_1'
+                ,'0815_exp_jeongwoo_highway_2']
+
 
 seq_list = [(50,2450),
             (6000,9000),
@@ -206,7 +211,13 @@ seq_list = [(50,2450),
             (170,190),
             (160,190),
             (30,130),
-            (170,220)]
+            (170,220),
+            (1400,4400),
+            (14000,17000),
+            (1400,4400),
+            (5500,8500)]
+
+data_index_list = [96]
 
 score_threshold = 5.0
 MAX_RELIABILITY = 5
@@ -275,7 +286,7 @@ def matching_algorithm(cur_obj_list, obj_list, hash_id):
 
 if __name__=='__main__':
     rospy.init_node("assign_id", anonymous=True)
-    for data_index in range(0,96):
+    for data_index in data_index_list:
         hash_id = 0
         data_name = data_name_list[data_index]
         data_path = rospkg.RosPack().get_path("sensor_decoder") + "/data/" + data_name + "/"

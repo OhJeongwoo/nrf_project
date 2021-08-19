@@ -332,8 +332,10 @@ class ObjectQuery:
             obj.l = objects[i]['l']
             obj.w = objects[i]['w']
             obj.valid = objects[i]['valid']
-            obj.id = i
-            # obj.id = objects[i]['id']
+            if self.query_type == 1:
+                obj.id = i
+            else :
+                obj.id = objects[i]['id']
             obj_list.append(obj)
 
         rt.objects = obj_list
@@ -499,31 +501,34 @@ class ObjectQuery:
                 break
             else :
                 x = int(x)
-                for i in range(len(self.state['objects'])):
-                    if self.state['objects'][i]['id'] ==x:
-                        x = i
-                        break
-                obj = self.state['objects'][x]
-                print("obj info : x y theta l w")
-                print("%.2f %.2f %.2f %.2f %.2f" %(obj['x'], obj['y'], obj['theta']/math.pi*180, obj['l'], obj['w']))
                 print("x : change x value")
-                print("y : change x value")
-                print("t : change x value")
-                print("l : change x value")
-                print("w : change x value")
+                print("y : change y value")
+                print("t : change theta value")
+                print("l : change l value")
+                print("w : change w value")
                 y = raw_input()
                 print("input value")
                 z = input()
-                if y == 'x':
-                    self.state['objects'][x]['x'] += z
-                if y == 'y':
-                    self.state['objects'][x]['y'] += z
-                if y == 't':
-                    self.state['objects'][x]['theta'] += z * math.pi / 180
-                if y == 'l':
-                    self.state['objects'][x]['l'] = z
-                if y == 'w':
-                    self.state['objects'][x]['w'] = z
+                check = False
+                for i in range(len(self.state['objects'])):
+                    if self.state['objects'][i]['id'] ==x:
+                        x = i
+                        check = True
+                        break
+                if check :
+                    obj = self.state['objects'][x]
+                    
+                    
+                    if y == 'x':
+                        self.state['objects'][x]['x'] += z
+                    if y == 'y':
+                        self.state['objects'][x]['y'] += z
+                    if y == 't':
+                        self.state['objects'][x]['theta'] += z * math.pi / 180
+                    if y == 'l':
+                        self.state['objects'][x]['l'] = z
+                    if y == 'w':
+                        self.state['objects'][x]['w'] = z
 
             self.pub_object(self.state['objects'])
 
