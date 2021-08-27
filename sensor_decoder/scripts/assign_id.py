@@ -217,7 +217,7 @@ seq_list = [(50,2450),
             (1400,4400),
             (5500,8500)]
 
-data_index_list = [96]
+data_index_list = [98,99]
 
 score_threshold = 5.0
 MAX_RELIABILITY = 5

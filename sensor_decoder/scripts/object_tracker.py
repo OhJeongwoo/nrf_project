@@ -106,7 +106,12 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2']
+                ,'0729_neg_wooseok_50_2'
+                ,'0813_exp_jeongwoo_road_1'
+                ,'0813_exp_jeongwoo_road_2'
+                ,'0815_exp_jeongwoo_highway_1'
+                ,'0815_exp_jeongwoo_highway_2']
+
 
 seq_list = [(50,2450),
             (6000,9000),
@@ -203,7 +208,13 @@ seq_list = [(50,2450),
             (170,190),
             (160,190),
             (30,130),
-            (170,220)]
+            (170,220),
+            (1400,4400),
+            (14000,17000),
+            (1400,4400),
+            (5500,8500)]
+
+data_index_list = [98]
 
 score_threshold = 0.5
 MAX_RELIABILITY = 5
@@ -255,42 +266,6 @@ def predict(obj):
     we = state[8]
 
     F = np.zeros((9,9))
-    
-    # F[0,0] = 1.0
-    # F[0,1] = 0.0
-    # F[0,2] = -math.sin(tt) * (vt * dt)
-    # F[0,3] = math.cos(tt) * dt 
-    # F[0,4] = 0.0
-    # F[0,5] = 0.0
-    # F[0,6] = -dt
-    # F[0,7] = 0.0
-    # F[0,8] = 0.0
-
-    # F[1,0] = 0.0
-    # F[1,1] = 1.0
-    # F[1,2] = math.cos(tt) * (vt * dt)
-    # F[1,3] = math.sin(tt)
-    # F[1,7] = 0.0
-    
-
-    # F[2,2] = 1.0
-    # F[2,5] = dt
-    # F[2,8] = -dt
-
-    # F[3,3] = 1.0
-    # F[3,4] = dt
-
-    # F[4,4] = 1.0
-
-    # F[5,5] = 1.0
-
-    # F[6,6] = 1.0
-    # F[6,7] = dt
-
-    # F[7,7] = 1.0
-
-    # F[8,8] = 1.0
-
 
     F[0,0] = 1.0
     F[0,1] = 0.0
@@ -399,6 +374,8 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['P'] = (np.eye(9) - K.dot(H)).dot(P)
         obj['age'] = obj['age'] + 1
         obj['reliability'] = min(obj['reliability'] + 1, MAX_RELIABILITY)
+        obj['has_obs'] = True
+        obj['observation'] = z
         rt.append(obj)
         
 
@@ -416,6 +393,9 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['P'] = tar['P']
         obj['l'] = tar['l']
         obj['w'] = tar['w']
+        obj['has_obs'] = False
+        obj['observation'] = None
+        
         rt.append(obj)
 
     for b in range(B):
@@ -443,7 +423,9 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
         obj['P'] = P_init
         obj['l'] = tar['l']
         obj['w'] = tar['w']
-        hash_id += 1
+        obj['has_obs'] = True
+        obj['observation'] = np.array([tar['x'], tar['y'], tar['theta'], ego['v'], ego['ax'], ego['omega']])
+        hash_id += 1 
         print(hash_id)
         rt.append(obj)
 
@@ -451,24 +433,30 @@ def kalman_update(cur_objects_list, observed_data, ego, hash_id):
 
 def single_kalman(obj, ego, obv):
     obj = predict(obj)
-    F = obj['F']
-    P = obj['P']
-    r = obj['reliability']
-    P = F.dot(P).dot(np.transpose(F)) + Q/r
-    z = np.array([obv['x'], obv['y'], obv['theta'], ego['v'], ego['ax'], ego['omega']])
-    
-    y = z - H.dot(obj['prediction'])
-    S = H .dot(P).dot(np.transpose(H)) + R/r
-    K = P.dot(np.transpose(H)).dot(np.linalg.inv(S))
-    state =  obj['prediction'] + K.dot(y)
-    obj['state'] = state
-    obj['P'] = (np.eye(9) - K.dot(H)).dot(P)
-    obj['age'] = obj['age'] + 1
-    obj['reliability'] = obv['reliability']
-    return obj
+    if not obv['has_obs']:
+        obj['state'] = obj['prediction']
+        obj['age'] = obj['age'] + 1
+        obj['reliability'] = obj['reliability']
+        return obj
+    else :
+        F = obj['F']
+        P = obj['P']
+        r = obj['reliability']
+        P = F.dot(P).dot(np.transpose(F)) + Q/r
+        z = np.array([obv['x'], obv['y'], obv['theta'], ego['v'], ego['ax'], ego['omega']])
+        
+        y = z - H.dot(obj['prediction'])
+        S = H .dot(P).dot(np.transpose(H)) + R/r
+        K = P.dot(np.transpose(H)).dot(np.linalg.inv(S))
+        state =  obj['prediction'] + K.dot(y)
+        obj['state'] = state
+        obj['P'] = (np.eye(9) - K.dot(H)).dot(P)
+        obj['age'] = obj['age'] + 1
+        obj['reliability'] = obv['reliability']
+        return obj
 
 
-for data_index in range(0,96):
+for data_index in data_index_list:
     # if data_index != 90 :
     #     continue
     data_name = data_name_list[data_index]
@@ -513,6 +501,99 @@ for data_index in range(0,96):
         
         save_objects = []
         for obj in cur_objects_list:
+            # save_objects.append({'x': obj['state'][0],
+            #                      'y': obj['state'][1],
+            #                      'theta': obj['state'][2],
+            #                      'v': obj['state'][3],
+            #                      'ax': obj['state'][4],
+            #                      'omega': obj['state'][5],
+            #                      'age': obj['age'],
+            #                      'reliability': obj['reliability'],
+            #                      'id': obj['id'],
+            #                      'l': obj['l'],
+            #                      'w': obj['w']})
+            object_lists[obj['id']].append({'x': obj['state'][0],
+                                            'y': obj['state'][1],
+                                            'theta': obj['state'][2],
+                                            'v': obj['state'][3],
+                                            'ax': obj['state'][4],
+                                            'omega': obj['state'][5],
+                                            'age': obj['age'],
+                                            'reliability': obj['reliability'],
+                                            'id': obj['id'],
+                                            'l': obj['l'],
+                                            'w': obj['w'],
+                                            'seq': seq,
+                                            'observation': obj['observation'],
+                                            'has_obs': obj['has_obs']})
+
+        # state_file = state_path + str(save_seq).zfill(6)+".json"
+        # with open(state_file, "r") as st_json:
+        #     state = json.load(st_json)
+        # state['filtered_objects'] = save_objects
+
+        # with open(state_file, 'w') as outfile:
+        #     json.dump(state, outfile, indent=4)
+    
+    save_objects_lists = [[] for i in range(N)]
+    for obj_id in range(1000):
+        if len(object_lists[obj_id]) < 10:
+            continue
+        start_seq = object_lists[obj_id][0]['seq']
+        M = len(object_lists[obj_id])
+        init_v = object_lists[obj_id][9]['v'] + 5 * object_lists[obj_id][9]['ax'] + np.random.normal(0.0, 0.5)
+        init_a = object_lists[obj_id][9]['ax'] + np.random.normal(0.0, 0.1)
+        init_w = object_lists[obj_id][9]['w'] + np.random.normal(0.0, 0.01)
+        object_tmp_lists = []
+        cur_object = {}
+        for i in range(M):
+            seq = start_seq + i
+            if i == 0:
+                cur_object['state'] = np.array([object_lists[obj_id][0]['x'],
+                                                object_lists[obj_id][0]['y'],
+                                                object_lists[obj_id][0]['theta'],
+                                                init_v,
+                                                init_a,
+                                                init_w,
+                                                ego_data[seq]['v'],
+                                                ego_data[seq]['ax'],
+                                                ego_data[seq]['omega']])
+                
+                cur_object['reliability'] = object_lists[obj_id][0]['reliability']
+                cur_object['age'] = 1
+                cur_object['id'] = obj_id
+                cur_object['P'] = P_init
+                cur_object['l'] = object_lists[obj_id][0]['l']
+                cur_object['w'] = object_lists[obj_id][0]['w']
+                # save_objects_lists[start_seq + i].append(cur_object)
+                copy_object = {}
+                copy_object['state'] = cur_object['state']
+                copy_object['age'] = cur_object['age']
+                copy_object['reliability'] = cur_object['reliability']
+                copy_object['l'] = cur_object['l']
+                copy_object['w'] = cur_object['w']
+                copy_object['id'] = cur_object['id']
+                object_tmp_lists.append(copy_object)
+            else:
+                cur_object = single_kalman(cur_object, ego_data[seq], object_lists[obj_id][i])
+                copy_object = {}
+                copy_object['state'] = cur_object['state']
+                copy_object['age'] = cur_object['age']
+                copy_object['reliability'] = cur_object['reliability']
+                copy_object['l'] = cur_object['l']
+                copy_object['w'] = cur_object['w']
+                copy_object['id'] = cur_object['id']
+                # save_objects_lists[start_seq + i].append(cur_object)
+                object_tmp_lists.append(copy_object)
+        for i in range(M):
+            save_objects_lists[start_seq + i].append(object_tmp_lists[i])
+        
+            
+    for seq in range(N):
+        save_seq = st + seq + 1
+        save_objects = []
+        
+        for obj in save_objects_lists[seq]:
             save_objects.append({'x': obj['state'][0],
                                  'y': obj['state'][1],
                                  'theta': obj['state'][2],
@@ -524,19 +605,7 @@ for data_index in range(0,96):
                                  'id': obj['id'],
                                  'l': obj['l'],
                                  'w': obj['w']})
-            # object_lists[obj['id']].append({'x': obj['state'][0],
-            #                                 'y': obj['state'][1],
-            #                                 'theta': obj['state'][2],
-            #                                 'v': obj['state'][3],
-            #                                 'ax': obj['state'][4],
-            #                                 'omega': obj['state'][5],
-            #                                 'age': obj['age'],
-            #                                 'reliability': obj['reliability'],
-            #                                 'id': obj['id'],
-            #                                 'l': obj['l'],
-            #                                 'w': obj['w'],
-            #                                 'seq': seq})
-
+        
         state_file = state_path + str(save_seq).zfill(6)+".json"
         with open(state_file, "r") as st_json:
             state = json.load(st_json)
@@ -544,63 +613,6 @@ for data_index in range(0,96):
 
         with open(state_file, 'w') as outfile:
             json.dump(state, outfile, indent=4)
-    
-    # save_objects_lists = [[] for i in range(N)]
-    # for obj_id in range(1000):
-    #     if len(object_lists[obj_id]) < 5:
-    #         continue
-    #     start_seq = object_lists[obj_id][0]['seq']
-    #     M = len(object_lists[obj_id])
-    #     init_v = object_lists[obj_id][4]['v'] + np.random.normal(0.0, 0.5)
-    #     init_a = object_lists[obj_id][4]['ax'] + np.random.normal(0.0, 0.1)
-    #     init_w = object_lists[obj_id][4]['w'] + np.random.normal(0.0, 0.01)
-    #     cur_object = {}
-    #     for i in range(M):
-    #         seq = start_seq + i
-    #         if i == 0:
-    #             cur_object['state'] = np.array([object_lists[obj_id][0]['x'],
-    #                                             object_lists[obj_id][0]['y'],
-    #                                             object_lists[obj_id][0]['theta'],
-    #                                             init_v,
-    #                                             init_a,
-    #                                             init_w,
-    #                                             ego_data[seq]['v'],
-    #                                             ego_data[seq]['ax'],
-    #                                             ego_data[seq]['omega']])
-                
-    #             cur_object['reliability'] = object_lists[obj_id][0]['reliability']
-    #             cur_object['age'] = 1
-    #             cur_object['id'] = obj_id
-    #             cur_object['P'] = P_init
-    #             cur_object['l'] = object_lists[obj_id][0]['l']
-    #             cur_object['w'] = object_lists[obj_id][0]['w']
-    #         else:
-    #             cur_object = single_kalman(cur_object, ego_data[seq], object_lists[obj_id][i])
-    #         save_objects_lists[seq].append(cur_object)
-
-    # for seq in range(N):
-    #     save_seq = st + seq + 1
-    #     save_objects = []
-    #     for obj in save_objects_lists[seq]:
-    #         save_objects.append({'x': obj['state'][0],
-    #                              'y': obj['state'][1],
-    #                              'theta': obj['state'][2],
-    #                              'v': obj['state'][3],
-    #                              'ax': obj['state'][4],
-    #                              'omega': obj['state'][5],
-    #                              'age': obj['age'],
-    #                              'reliability': obj['reliability'],
-    #                              'id': obj['id'],
-    #                              'l': obj['l'],
-    #                              'w': obj['w']})
-
-    #     state_file = state_path + str(save_seq).zfill(6)+".json"
-    #     with open(state_file, "r") as st_json:
-    #         state = json.load(st_json)
-    #     state['filtered_objects'] = save_objects
-
-    #     with open(state_file, 'w') as outfile:
-    #         json.dump(state, outfile, indent=4)
 
 
 

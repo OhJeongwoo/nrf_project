@@ -168,7 +168,8 @@ vector<string> data_name_list = {"0729_exp_gunmin_FMTC"
                 ,"0813_exp_jeongwoo_road_1"
                 ,"0813_exp_jeongwoo_road_2"
                 ,"0815_exp_jeongwoo_highway_1"
-                ,"0815_exp_jeongwoo_highway_2"};
+                ,"0815_exp_jeongwoo_highway_2"
+                ,"0826_exp_jeongwoo_FMTC"};
 
 vector<pii> seq_list = {{50,2450},
             {6000,9000},
@@ -269,7 +270,8 @@ vector<pii> seq_list = {{50,2450},
             {1400,4400},
             {14000,17000},
             {1400,4400},
-            {5500,8500}};
+            {5500,8500},
+            {500,10500}};
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "object_detector");
@@ -277,7 +279,7 @@ int main(int argc, char **argv){
     clock_t begin = clock();
     clock_t end = clock();
     for(int i = 0; i<NN;i++){
-        if (i<96) continue;
+        if (i<100) continue;
         string data_name = data_name_list[i];
         stringstream data_path;
         data_path << ros::package::getPath("sensor_decoder") << "/data/" << data_name << "/";

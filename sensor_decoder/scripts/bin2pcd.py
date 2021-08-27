@@ -121,7 +121,8 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0813_exp_jeongwoo_road_1'
                 ,'0813_exp_jeongwoo_road_2'
                 ,'0815_exp_jeongwoo_highway_1'
-                ,'0815_exp_jeongwoo_highway_2']
+                ,'0815_exp_jeongwoo_highway_2'
+                ,'0826_exp_jeongwoo_FMTC']
 
 
 seq_list = [(50,2450),
@@ -223,14 +224,15 @@ seq_list = [(50,2450),
             (1400,4400),
             (14000,17000),
             (1400,4400),
-            (5500,8500)]
+            (5500,8500),
+            (500, 10500)]
 
 N = len(data_name_list)
 start = time.time()
 end = time.time()
-for i, data_name in enumerate(data_name_list) :
-    if data_name[1] == '7':
-        continue
+data_index_list = [100]
+for i in data_index_list:
+    data_name = data_name_list[i]
     print("[%d / %d, %.2f] Start to convert point cloud files, data name is %s" %(i+1, N, end - start, data_name))
     data_path = "/home/jeongwoooh/catkin_ws/src/nrf_project/sensor_decoder/data/" + data_name + "/"
     # print('(0,'+str(len(os.listdir(data_path + "bin/"))) + ')')

@@ -114,7 +114,8 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0813_exp_jeongwoo_road_1'
                 ,'0813_exp_jeongwoo_road_2'
                 ,'0815_exp_jeongwoo_highway_1'
-                ,'0815_exp_jeongwoo_highway_2']
+                ,'0815_exp_jeongwoo_highway_2'
+                ,'0826_exp_jeongwoo_FMTC']
 
 
 seq_list = [(50,2450),
@@ -216,7 +217,8 @@ seq_list = [(50,2450),
             (1400,4400),
             (14000,17000),
             (1400,4400),
-            (5500,8500)]
+            (5500,8500),
+            (500, 10500)]
 
 
 class ObjectQuery:
@@ -227,6 +229,7 @@ class ObjectQuery:
         
         self.pub_data = rospy.Publisher("/query_data", Data, queue_size=10)
         self.pub_label = rospy.Publisher("/query_label", Label, queue_size=10)
+        self.n_data_list = len(data_name_list)
 
         print("1: valid query")
         print("2: object query")
@@ -339,7 +342,7 @@ class ObjectQuery:
     def query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,100):
+        for i in range(0,self.n_data_list):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -415,7 +418,7 @@ class ObjectQuery:
     def object_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,100):
+        for i in range(0,self.n_data_list):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -529,7 +532,7 @@ class ObjectQuery:
     def test_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,100):
+        for i in range(0,self.n_data_list):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -635,7 +638,7 @@ class ObjectQuery:
     def theta_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,100):
+        for i in range(0,self.n_data_list):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")
@@ -709,7 +712,7 @@ class ObjectQuery:
     def l_query(self):
         print("DATA NAME LIST")
         print("========================================")
-        for i in range(0,100):
+        for i in range(0,self.n_data_list):
             print("%d : %s" %(i, data_name_list[i]))
         print("========================================")
         print("Input data name index")

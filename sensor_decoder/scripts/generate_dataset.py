@@ -5,6 +5,7 @@ import rospy
 import rospkg
 import shutil
 import json
+import operator
 
 
 data_name_list = ['0729_exp_gunmin_FMTC'
@@ -102,7 +103,12 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2']
+                ,'0729_neg_wooseok_50_2'
+                ,'0813_exp_jeongwoo_road_1'
+                ,'0813_exp_jeongwoo_road_2'
+                ,'0815_exp_jeongwoo_highway_1'
+                ,'0815_exp_jeongwoo_highway_2']
+
 
 seq_list = [(50,2450),
             (6000,9000),
@@ -199,7 +205,11 @@ seq_list = [(50,2450),
             (170,190),
             (160,190),
             (30,130),
-            (170,220)]
+            (170,220),
+            (1400,4400),
+            (14000,17000),
+            (1400,4400),
+            (5500,8500)]
 
 def make_dir(path):
     if not os.path.exists(path):
@@ -215,10 +225,9 @@ make_dir(neg_path)
 
 dev = 0.0
 
+data_index_list = [i for i in range(100)]
 
-for data_index in range(0,96):
-    if data_index != 2:
-        continue
+for data_index in data_index_list:
     data_name = data_name_list[data_index]
     if data_name[5:8] == 'exp':
         data_path = exp_path + data_name + "/"
@@ -295,7 +304,11 @@ for data_index in range(0,96):
         else :    
             save_state['is_tunnel'] = state['is_tunnel']
         save_state['lanes'] = state['lanes']
-        save_state['objects'] = state['filtered_objects']
+        object_lists = state['filtered_objects']
+        for i in range(len(object_lists)):
+            object_lists[i]['value'] = abs(object_lists[i]['x']) + abs(object_lists[i]['y'])
+        save_state['objects'] = sorted(object_lists, key=operator.itemgetter('value'))
+        # save_state['objects'] = state['filtered_objects']
 
         with open(dst_state_file, 'w') as outfile:
                 json.dump(save_state, outfile, indent=4)

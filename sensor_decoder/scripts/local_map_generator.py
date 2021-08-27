@@ -103,7 +103,11 @@ data_name_list = ['0729_exp_gunmin_FMTC'
                 ,'0729_neg_wooseok_46'
                 ,'0729_neg_wooseok_47'
                 ,'0729_neg_wooseok_50_1'
-                ,'0729_neg_wooseok_50_2']
+                ,'0729_neg_wooseok_50_2'
+                ,'0813_exp_jeongwoo_road_1'
+                ,'0813_exp_jeongwoo_road_2'
+                ,'0815_exp_jeongwoo_highway_1'
+                ,'0815_exp_jeongwoo_highway_2']
 
 
 seq_list = [(50,2450),
@@ -201,7 +205,11 @@ seq_list = [(50,2450),
             (170,190),
             (160,190),
             (30,130),
-            (170,220)]
+            (170,220),
+            (1400,4400),
+            (14000,17000),
+            (1400,4400),
+            (5500,8500)]
 
 """
 For bird eye view map
@@ -295,7 +303,11 @@ def draw_object(image, objects):
 # data_list = [2]
 # data_list = [3, 4]
 # data_list = [5]
-data_list = [6]
+# data_list = [6]
+# data_list = [96]
+# data_list = [97]
+data_list = [98]
+# data_list = [99]
 # data_list = []
 # for i in range(7,96):
 #     data_list.append(i)
