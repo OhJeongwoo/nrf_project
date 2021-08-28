@@ -215,7 +215,11 @@ def make_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
-dataset_path = rospkg.RosPack().get_path("sensor_decoder") + "/mixquality/"
+is_light = True
+if is_light:
+    dataset_path = rospkg.RosPack().get_path("sensor_decoder") + "/light_mixquality/"
+else :
+    dataset_path = rospkg.RosPack().get_path("sensor_decoder") + "/mixquality/"
 make_dir(dataset_path)
 
 exp_path = dataset_path + "exp/"
@@ -270,9 +274,9 @@ for data_index in data_index_list:
         dst_img_file = img_path + file_name + ".png"
         dst_map_file = map_path + file_name + ".png"
 
-        shutil.copy(src_bin_file, dst_bin_file)
-        shutil.copy(src_img_file, dst_img_file)
-        shutil.copy(src_map_file, dst_map_file)
+        # shutil.copy(src_bin_file, dst_bin_file)
+        # shutil.copy(src_img_file, dst_img_file)
+        # shutil.copy(src_map_file, dst_map_file)
 
         with open(src_state_file, "r") as st_json:
             state = json.load(st_json)
