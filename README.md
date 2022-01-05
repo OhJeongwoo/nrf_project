@@ -17,25 +17,15 @@ You must install ROS before installing autoware. We provide reference link to in
 
 ```console
 $ sudo apt update
-
 $ sudo apt install -y python-catkin-pkg python-rosdep ros-$ROS_DISTRO-catkin
-
 $ sudo apt install -y python3-pip python3-colcon-common-extensions python3-setuptools python3-vcstool
-
 $ pip3 install -U setuptools
-
 $ cd && mkdir -p autoware.ai/src
-
 $ cd autoware.ai
-
 $ wget -O autoware.ai.repos "https://raw.githubusercontent.com/Autoware-AI/autoware.ai/1.12.0/autoware.ai.repos"
-
 $ vcs import src < autoware.ai.repos
-
 $ rosdep update
-
 $ rosdep install -y --from-paths src --ignore-src --rosdistro melodic
-
 $ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
