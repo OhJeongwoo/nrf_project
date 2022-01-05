@@ -35,13 +35,14 @@ $ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 You need ***inertiallabs pkg*** for running GPS and IMU
 
+```console
 $ cd ~/catkin_ws/src && git clone https://us.inertiallabs.com:31443/scm/ins/inertiallabs-ros-pkgs.git
-
 $ cd ~/catkin_ws && catkin_make
+```console
 
 The support of the ***FTDI*** is embedded into the Linux core, and usually, no additional settings or configurations are required to work with INS serial ports on Linux. Most probably, the issue you have is caused by access rights.
 
-Please ensure that your current user has access rights to USB serial ports (try to read serial port file configuration, for example: stty -F /dev/ttyUSB0) if not - make sure that every USB-to-serial adapter is assigned to the group dialout and add your current user to this group by issuing the following command as root:
+Please ensure that your current user has access rights to USB serial ports (try to read serial port file configuration, for example: ***stty -F /dev/ttyUSB0***) if not - make sure that every USB-to-serial adapter is assigned to the group dialout and add your current user to this group by issuing the following command as root:
 
 $ usermod -a -G dialout <current-user>
 
