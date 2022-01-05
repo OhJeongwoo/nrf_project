@@ -15,7 +15,7 @@ You must install ROS before installing autoware. We provide reference link to in
 
 ***https://github.com/Autoware-AI/autoware.ai***
 
-'''console
+```console
 $ sudo apt update
 
 $ sudo apt install -y python-catkin-pkg python-rosdep ros-$ROS_DISTRO-catkin
@@ -37,7 +37,7 @@ $ rosdep update
 $ rosdep install -y --from-paths src --ignore-src --rosdistro melodic
 
 $ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
-'''
+```
 
 ## Sensor setting
 
