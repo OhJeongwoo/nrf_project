@@ -24,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   inertiallabs_msgs
 )
 
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3)
 find_package(PCL 1.8 REQUIRED)
 
@@ -102,9 +102,9 @@ add_dependencies(decision_manual ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 # add_dependencies(query_viz_tool ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ####################################################################################################
 
-add_executable(object_detector src/object_detector.cpp ${HEADERS} ${SOURCES})
-target_link_libraries(object_detector ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
-add_dependencies(object_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_executable(object_detector src/object_detector.cpp ${HEADERS} ${SOURCES})
+# target_link_libraries(object_detector ${catkin_LIBRARIES} ${CV_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+# add_dependencies(object_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python(PROGRAMS
   scripts/pcan_decoder.py
